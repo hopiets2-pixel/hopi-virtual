@@ -895,8 +895,8 @@ const CATEGORY_LABELS={trika:'Trička',mikiny:'Mikiny',cepice:'Čepice',doplnky:
 
 const DEFAULT_SETTINGS={
   shopName:'HOPI VIRTUAL',
-  email:'shop@hopivirtual.cz',
-  phone:'+420 123 456 789',
+  email:'eshophopivirtual@gmail.com',
+  phone:'+420 731 846 021',
   heroLine1:'Nos to',
   heroLine2:'na sobě.',
   heroLine3:'HOPI Virtual',
@@ -1374,7 +1374,7 @@ function getEmailTemplates(){
 function setEmailTemplates(t){localStorage.setItem('hopi_email_templates',JSON.stringify(t))}
 
 function getEmailConfig(){
-  return JSON.parse(localStorage.getItem('hopi_email_config')||'{"mode":"demo","emailjsServiceId":"","emailjsTemplateId":"","emailjsPublicKey":"","fromName":"HOPI VIRTUAL","fromEmail":"shop@hopivirtual.cz"}');
+  return JSON.parse(localStorage.getItem('hopi_email_config')||'{"mode":"demo","emailjsServiceId":"","emailjsTemplateId":"","emailjsPublicKey":"","fromName":"HOPI VIRTUAL","fromEmail":"eshophopivirtual@gmail.com"}');
 }
 function setEmailConfig(c){localStorage.setItem('hopi_email_config',JSON.stringify(c))}
 
@@ -1434,7 +1434,7 @@ ${s.iban?'➡️ IBAN: '+s.iban+'\n':''}${s.bankName?'➡️ Banka: '+s.bankName
     '{platba}':payL,
     '{datum}':new Date(order.date).toLocaleDateString('cs-CZ'),
     '{nazev_shopu}':s.shopName||'HOPI VIRTUAL',
-    '{email_shopu}':s.email||'shop@hopivirtual.cz',
+    '{email_shopu}':s.email||'eshophopivirtual@gmail.com',
     '{telefon_shopu}':s.phone||'',
     '{sledovaci_cislo}':order.tracking?.number||'',
     '{tracking_link}':order.tracking?.url||'',
@@ -1622,7 +1622,7 @@ async function sendStatusEmail(order,newStatus,options={}){
           to_email:toEmail,
           to_name:toName.trim(),
           from_name:config.fromName||'HOPI VIRTUAL',
-          reply_to:config.fromEmail||'shop@hopivirtual.cz',
+          reply_to:config.fromEmail||'eshophopivirtual@gmail.com',
           subject:subject,
           message:bodyText,
           message_html:bodyHTML,
@@ -3945,7 +3945,7 @@ window.submitComplaint=function(){
 function viewInfo({t='doprava'}={}){
   const s=getSettings();
   const shopName=s.shopName||'HOPI VIRTUAL';
-  const shopEmail=s.email||'shop@hopivirtual.cz';
+  const shopEmail=s.email||'eshophopivirtual@gmail.com';
   const TOPICS={
     'doprava':{title:'Doprava a platba',html:`
       <h2 style="font-family:'Archivo Black',sans-serif;font-size:20px;margin-bottom:14px;margin-top:24px;text-transform:uppercase">📦 Způsoby dopravy</h2>
