@@ -2962,11 +2962,7 @@ function viewCheckout(){
             <label class="option" data-ship="kuryr" data-price="149"><input type="radio" name="ship" onchange="toggleZasilkovna()"><div class="option-text"><strong>Kurýr (Praha)</strong><span>Dnes do 3 h</span></div><div class="option-price">149 Kč</div></label>
 
             <h2><span class="num">5</span>Platba</h2>
-            <label class="option selected" data-pay="card"><input type="radio" name="pay" checked><div class="option-text"><strong>Platební karta</strong><span>Visa / Mastercard</span></div></label>
-            <label class="option" data-pay="applepay"><input type="radio" name="pay"><div class="option-text"><strong>Apple Pay</strong><span>Dotykem</span></div></label>
-            <label class="option" data-pay="googlepay"><input type="radio" name="pay"><div class="option-text"><strong>Google Pay</strong><span>Dotykem</span></div></label>
-            <label class="option" data-pay="transfer"><input type="radio" name="pay"><div class="option-text"><strong>Bankovní převod</strong><span>1–2 dny</span></div></label>
-            <label class="option" data-pay="cod"><input type="radio" name="pay"><div class="option-text"><strong>Dobírka</strong><span>+39 Kč</span></div><div class="option-price">+39 Kč</div></label>
+            ${renderPaymentOptions()}
           </div>
 
           <div class="summary">
@@ -3243,6 +3239,47 @@ window.previewProductsJson = function(){
 // Volá Supabase Edge Function 'gopay-create-payment', která bezpečně vytvoří GoPay platbu
 // (Client Secret je uložený jen v Supabase secrets, ne v tomto frontend kódu).
 
+// ============== PLATEBNÍ METODY (zapnuté/vypnuté v checkoutu) ==============
+// Definice všech podporovaných platebních metod a defaultní nastavení.
+const PAYMENT_METHODS_META = [
+  { key: 'card',      label: 'Platební karta',  sub: 'Visa / Mastercard',     icon: '💳', viaGoPay: true,  defaultEnabled: true  },
+  { key: 'applepay',  label: 'Apple Pay',       sub: 'Dotykem',               icon: '🍎', viaGoPay: true,  defaultEnabled: true  },
+  { key: 'googlepay', label: 'Google Pay',      sub: 'Dotykem',               icon: '🤖', viaGoPay: true,  defaultEnabled: false },
+  { key: 'transfer',  label: 'Bankovní převod', sub: '1–2 dny',               icon: '🏦', viaGoPay: false, defaultEnabled: true  },
+  { key: 'cod',       label: 'Dobírka',         sub: '+39 Kč',                icon: '📦', viaGoPay: false, defaultEnabled: true  },
+];
+
+function getPaymentMethodsConfig(){
+  const stored = localStorage.getItem('hopi_payment_methods');
+  if(stored){
+    try { return JSON.parse(stored); } catch(e){}
+  }
+  // default — vše zapnuté kromě Google Pay (musí se zapnout u GoPay zvlášť)
+  const def = {};
+  for(const m of PAYMENT_METHODS_META) def[m.key] = m.defaultEnabled;
+  return def;
+}
+function setPaymentMethodsConfig(cfg){
+  localStorage.setItem('hopi_payment_methods', JSON.stringify(cfg));
+}
+function isPaymentMethodEnabled(key){
+  return !!getPaymentMethodsConfig()[key];
+}
+function renderPaymentOptions(){
+  const cfg = getPaymentMethodsConfig();
+  // První zapnutá metoda bude pre-selected
+  const enabled = PAYMENT_METHODS_META.filter(m => cfg[m.key]);
+  if(enabled.length === 0){
+    return `<div style="padding:14px;background:rgba(229,57,53,0.08);border-left:3px solid var(--red);color:#ff8a80;font-size:13px">⚠️ Nejsou nakonfigurované žádné platební metody. Otevři <strong>Admin → Platby</strong>.</div>`;
+  }
+  return enabled.map((m, i) => {
+    const sel = i === 0 ? 'selected' : '';
+    const checked = i === 0 ? 'checked' : '';
+    const priceTag = m.key === 'cod' ? '<div class="option-price">+39 Kč</div>' : '';
+    return `<label class="option ${sel}" data-pay="${m.key}"><input type="radio" name="pay" ${checked}><div class="option-text"><strong>${escapeHtml(m.label)}</strong><span>${escapeHtml(m.sub)}</span></div>${priceTag}</label>`;
+  }).join('');
+}
+
 function getGopayConfig(){
   return JSON.parse(localStorage.getItem('hopi_gopay_config')||'{"enabled":false,"goid":"","mode":"test"}');
 }
@@ -3254,27 +3291,48 @@ function isGoPayActive(){
   return !!c.enabled && !!c.goid;
 }
 
+// Bezpečný zápis do localStorage — v Safari Private Mode může selhat
+function safeLSset(key, value){
+  try { localStorage.setItem(key, value); return true; }
+  catch(e){ console.warn('localStorage.setItem failed:', e); return false; }
+}
+function safeLSget(key){
+  try { return localStorage.getItem(key); }
+  catch(e){ console.warn('localStorage.getItem failed:', e); return null; }
+}
+function safeLSremove(key){
+  try { localStorage.removeItem(key); }
+  catch(e){ console.warn('localStorage.removeItem failed:', e); }
+}
+
 async function payViaGoPay(order){
+  // 🛡️ KRITICKÉ: Vůbec NIC neprovádíme (sklad, košík, success) dokud nemáme gw_url z GoPay.
+  // Pokud cokoliv selže, zákazník zůstane v košíku a vidí chybu — žádná tichá ztráta.
+  
+  let createBtn = null;
   try {
+    // Najít a disablovat tlačítko "Objednat", aby se nemohlo spustit 2×
+    createBtn = document.querySelector('[onclick*="createOrder"], .create-order-btn');
+    if(createBtn){ createBtn.disabled = true; createBtn.style.opacity = '0.6'; }
+    
     showToast('💳 Připravuji platbu přes GoPay...');
     
-    // 1) Uložit objednávku PŘED odchodem na bránu
-    saveOrder(order);
-    localStorage.setItem('hopi_pending_gopay_order', JSON.stringify(order));
-    localStorage.setItem('hopi_last_order', JSON.stringify(order));
-    
-    // 2) Sestavit URL pro Edge Function
+    // 1) Ověřit, že máme Supabase config
     const sbUrl = SUPABASE_URL;
     const sbKey = SUPABASE_KEY;
     if(!sbUrl || !sbKey){
       throw new Error('Supabase není nakonfigurován');
     }
     
+    // 2) Sestavit URL pro Edge Function
     const baseUrl = location.origin + location.pathname;
-    const returnUrl = baseUrl + '#/gopay-return';  // frontend handler po návratu
+    const returnUrl = baseUrl + '#/gopay-return';
     const notificationUrl = sbUrl + '/functions/v1/gopay-notification';
     
-    // 3) Zavolat Edge Function
+    // 3) Zavolat Edge Function (s timeoutem 25s, aby nezamrzlo)
+    const ctrl = new AbortController();
+    const timeoutId = setTimeout(() => ctrl.abort(), 25000);
+    
     const res = await fetch(sbUrl + '/functions/v1/gopay-create-payment', {
       method: 'POST',
       headers: {
@@ -3283,39 +3341,57 @@ async function payViaGoPay(order){
         'Authorization': 'Bearer ' + sbKey,
       },
       body: JSON.stringify({ order, returnUrl, notificationUrl }),
+      signal: ctrl.signal,
     });
+    clearTimeout(timeoutId);
     
     if(!res.ok){
       const errText = await res.text();
-      throw new Error('GoPay create-payment selhal: ' + errText);
+      throw new Error('GoPay create-payment selhal (HTTP '+res.status+'): ' + errText);
     }
     
     const data = await res.json();
     if(!data.gw_url){
-      throw new Error('GoPay nevrátil gw_url: ' + JSON.stringify(data));
+      throw new Error('GoPay nevrátil platební URL: ' + JSON.stringify(data));
     }
     
-    // 4) Uložit payment_id, abychom po návratu věděli, na co se ptát
-    localStorage.setItem('hopi_pending_gopay_payment_id', data.id);
+    // ✅ MÁME gw_url — TEPRVE TEĎ ukládáme objednávku a vyčistíme košík
+    // (kdyby byl výpadek mezi tímhle a redirectem, objednávka bude v Supabase
+    //  s paymentStatus pending — vyřeší webhook nebo handleGoPayReturn)
+    saveOrder(order);
+    safeLSset('hopi_pending_gopay_order', JSON.stringify(order));
+    safeLSset('hopi_last_order', JSON.stringify(order));
+    safeLSset('hopi_pending_gopay_payment_id', String(data.id));
     
-    // 5) Odečíst sklad, vyčistit košík
     order.items.forEach(i => decreaseStock(i.productId, i.qty));
     setCart([]);
     setAppliedPromo(null);
     
-    // 6) Přesměrovat na GoPay bránu
-    showToast('🔓 Přesměrovávám na GoPay...');
-    setTimeout(() => { location.href = data.gw_url; }, 400);
+    // 4) PŘESMĚROVAT OKAMŽITĚ — žádný setTimeout, žádný toast preview!
+    // Safari (zvlášť Private Mode) blokuje cross-domain redirecty zpožděné víc než pár ms.
+    // Musíme zůstat v rámci stejného microtasku jako uživatelův click.
+    window.location.href = data.gw_url;
     
   } catch(e){
+    // Pokud cokoliv selže — VRÁTIT zákazníka do checkoutu s jasnou chybou
     console.error('GoPay pay error:', e);
-    showToast('❌ Chyba GoPay: ' + e.message, 'error');
+    
+    if(createBtn){ createBtn.disabled = false; createBtn.style.opacity = '1'; }
+    
+    const msg = e.name === 'AbortError'
+      ? 'GoPay neodpovídá. Zkontroluj připojení a zkus to znovu, prosím.'
+      : 'Platba nemohla být zahájena: ' + (e.message || 'neznámá chyba');
+    
+    // Trvalá chybová hláška (alert) místo toastu, který zákazník nemusí vidět
+    alert('⚠️ ' + msg + '\n\nObjednávka NEBYLA odeslána. Můžeš ji znovu zkusit, nebo zvolit jinou platební metodu (převod, dobírka).');
+    
+    // NEVYČIŠŤOVAT košík, NEUKLÁDAT do success — zákazník zůstává v checkoutu
   }
 }
 
 // Po návratu zákazníka z GoPay — voláme status endpoint a podle stavu zobrazíme výsledek
 async function handleGoPayReturn(){
-  const paymentId = localStorage.getItem('hopi_pending_gopay_payment_id');
+  const paymentId = safeLSget('hopi_pending_gopay_payment_id');
   if(!paymentId){
     go('home');
     return;
@@ -3343,7 +3419,7 @@ async function handleGoPayReturn(){
     const data = await res.json();
     
     // Aktualizovat order paymentStatus podle GoPay stavu
-    const lastOrder = JSON.parse(localStorage.getItem('hopi_last_order')||'null');
+    const lastOrder = JSON.parse(safeLSget('hopi_last_order')||'null');
     if(lastOrder){
       let newStatus = 'pending';
       if(data.state === 'PAID') newStatus = 'paid';
@@ -3360,17 +3436,17 @@ async function handleGoPayReturn(){
       const idx = orders.findIndex(o => o.id === lastOrder.id);
       if(idx >= 0){
         orders[idx] = lastOrder;
-        localStorage.setItem('hopi_orders', JSON.stringify(orders));
+        safeLSset('hopi_orders', JSON.stringify(orders));
       }
-      localStorage.setItem('hopi_last_order', JSON.stringify(lastOrder));
+      safeLSset('hopi_last_order', JSON.stringify(lastOrder));
       
       // Sync do Supabase
       if(_supabaseReady) saveOrderToSupabase(lastOrder);
     }
     
     // Vyčistit pending markers
-    localStorage.removeItem('hopi_pending_gopay_order');
-    localStorage.removeItem('hopi_pending_gopay_payment_id');
+    safeLSremove('hopi_pending_gopay_order');
+    safeLSremove('hopi_pending_gopay_payment_id');
     
     // Zobrazit success / failure
     if(data.state === 'PAID' || data.state === 'AUTHORIZED'){
@@ -5873,8 +5949,70 @@ function viewPaymentsSettings(){
       </div>
     </div>
 
+    ${renderPaymentMethodsSection()}
     ${renderGoPaySection()}
   `;
+}
+
+function renderPaymentMethodsSection(){
+  const cfg = getPaymentMethodsConfig();
+  const enabledCount = Object.values(cfg).filter(Boolean).length;
+  return `
+    <div style="background:#fff;padding:24px;border:1px solid var(--border);max-width:800px;margin-top:30px">
+      <h3 style="font-family:'Archivo Black',sans-serif;font-size:18px;text-transform:uppercase;margin-bottom:8px">💼 Platební metody v checkoutu</h3>
+      <p style="font-size:13px;color:#666;margin-bottom:18px;line-height:1.6">
+        Vyber, které platební metody chceš zákazníkům nabídnout. Vypnuté metody se v checkoutu vůbec nezobrazí.
+        Aktuálně aktivní: <strong>${enabledCount} ${enabledCount===1?'metoda':enabledCount>=2&&enabledCount<=4?'metody':'metod'}</strong>.
+      </p>
+
+      <div style="background:#f5f5f5;padding:12px 14px;margin-bottom:18px;font-size:12px;color:#555;line-height:1.6;border-left:3px solid #999">
+        💡 <strong>Tip:</strong> Karta/Apple Pay/Google Pay jdou přes GoPay (online). Bankovní převod a dobírka jsou ruční (nepoužívají GoPay).
+        Google Pay i Apple Pay je třeba mít také zapnuté v GoPay merchant účtu (E-shopy → nastavení platebních metod).
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+        ${PAYMENT_METHODS_META.map(m => `
+          <label style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:${cfg[m.key]?'rgba(0,138,63,0.06)':'#fafafa'};border:2px solid ${cfg[m.key]?'var(--green)':'#e0e0e0'};cursor:pointer;transition:all 0.15s">
+            <input type="checkbox" class="payment-method-toggle" data-method="${m.key}" ${cfg[m.key]?'checked':''} style="width:20px;height:20px;accent-color:var(--green);cursor:pointer">
+            <div style="font-size:24px">${m.icon}</div>
+            <div style="flex:1">
+              <div style="font-weight:700;font-size:15px">${m.label}</div>
+              <div style="font-size:12px;color:#666;margin-top:2px">${m.sub} ${m.viaGoPay?'· <em style="color:var(--green)">přes GoPay</em>':'· <em style="color:#888">ruční</em>'}</div>
+            </div>
+            <div style="font-size:11px;font-weight:700;color:${cfg[m.key]?'var(--green)':'#999'};letter-spacing:0.05em">${cfg[m.key]?'✓ ZAPNUTO':'○ VYPNUTO'}</div>
+          </label>
+        `).join('')}
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;padding-top:16px;border-top:1px solid #eee">
+        <button class="abtn abtn-primary" onclick="savePaymentMethods()">💾 Uložit platební metody</button>
+        <button class="abtn" onclick="resetPaymentMethods()">↺ Obnovit výchozí</button>
+      </div>
+    </div>
+  `;
+}
+
+window.savePaymentMethods = function(){
+  const cfg = {};
+  document.querySelectorAll('.payment-method-toggle').forEach(el => {
+    cfg[el.dataset.method] = el.checked;
+  });
+  if(Object.values(cfg).filter(Boolean).length === 0){
+    alert('⚠️ Musíš mít zapnutou alespoň jednu platební metodu.');
+    return;
+  }
+  setPaymentMethodsConfig(cfg);
+  showToast('💾 Platební metody uloženy');
+  setTimeout(() => viewAdmin(), 300);
+}
+
+window.resetPaymentMethods = function(){
+  if(!confirm('Obnovit výchozí nastavení platebních metod?\n\nKarta, Apple Pay, Převod a Dobírka budou zapnuté. Google Pay vypnutý.')) return;
+  const def = {};
+  for(const m of PAYMENT_METHODS_META) def[m.key] = m.defaultEnabled;
+  setPaymentMethodsConfig(def);
+  showToast('↺ Obnoveno výchozí nastavení');
+  setTimeout(() => viewAdmin(), 300);
 }
 
 function renderGoPaySection(){
