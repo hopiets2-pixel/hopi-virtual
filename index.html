@@ -2315,10 +2315,78 @@ function go(hash){location.hash=hash;window.scrollTo({top:0,behavior:'smooth'})}
 window.go=go;
 window.addEventListener('hashchange',render);
 
+// ============== GLOBÁLNÍ APP SETTINGS (Supabase) ==============
+// KRITICKÉ: Admin nastavení (GoPay, platební metody, Snipcart) MUSÍ být v Supabase,
+// ne v localStorage, aby je viděli zákazníci napříč všemi prohlížeči/zařízeními.
+// localStorage cache slouží jen pro rychlost při opakovaném načtení.
+
+const _appSettingsCache = {};
+let _appSettingsLoaded = false;
+
+async function loadAppSettings(){
+  try {
+    const { data, error } = await supabaseClient
+      .from('app_settings')
+      .select('key, value');
+    if(error){
+      console.warn('⚠️ loadAppSettings error:', error.message);
+      // Pokud tabulka neexistuje (PGRST...), zkusíme fallback z localStorage
+      _loadAppSettingsFromLocalStorage();
+      return;
+    }
+    for(const row of (data || [])){
+      _appSettingsCache[row.key] = row.value;
+    }
+    _appSettingsLoaded = true;
+    // Cache do localStorage pro rychlost při dalším načtení
+    try { localStorage.setItem('hopi_app_settings_cache', JSON.stringify(_appSettingsCache)); } catch(e){}
+    console.log('✅ Načteno', Object.keys(_appSettingsCache).length, 'app settings ze Supabase');
+  } catch(e){
+    console.warn('⚠️ loadAppSettings exception:', e);
+    _loadAppSettingsFromLocalStorage();
+  }
+}
+
+function _loadAppSettingsFromLocalStorage(){
+  // Fallback: použít cache z localStorage (rychlé), pokud Supabase nejde
+  try {
+    const cached = localStorage.getItem('hopi_app_settings_cache');
+    if(cached){
+      Object.assign(_appSettingsCache, JSON.parse(cached));
+      console.log('📦 App settings z localStorage cache:', Object.keys(_appSettingsCache).length, 'klíčů');
+    }
+  } catch(e){}
+}
+
+function getAppSetting(key, defaultValue=null){
+  return _appSettingsCache[key] ?? defaultValue;
+}
+
+async function saveAppSetting(key, value){
+  _appSettingsCache[key] = value;
+  // Update local cache
+  try { localStorage.setItem('hopi_app_settings_cache', JSON.stringify(_appSettingsCache)); } catch(e){}
+  try {
+    const { error } = await supabaseClient
+      .from('app_settings')
+      .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+    if(error){
+      console.error('❌ saveAppSetting error:', error.message);
+      return false;
+    }
+    console.log('✅ Saved app setting:', key);
+    return true;
+  } catch(e){
+    console.error('❌ saveAppSetting exception:', e);
+    return false;
+  }
+}
+
 // Před prvním renderem zkusíme načíst produkty a objednávky ze Supabase
 window.addEventListener('load', async () => {
   await checkAdminSession(); // ověřit zda je session platná
   await Promise.all([
+    loadAppSettings(),         // ← KRITICKÉ — musí být před render (zákazník potřebuje vědět, jestli je GoPay aktivní)
     syncProductsFromSupabase(),
     syncOrdersFromSupabase()
   ]);
@@ -3069,6 +3137,14 @@ window.submitOrder=function(){
 
   // 🔀 PRIORITA: GoPay (pokud aktivní) → Snipcart (pokud aktivní) → standardní cesta
   const isCardPayment = ['card','applepay','googlepay'].includes(order.pay);
+  
+  // 🛡️ KRITICKÝ SAFETY GUARD: Pokud zákazník vybral kartu/Apple Pay/Google Pay,
+  // MUSÍ být aktivní GoPay nebo Snipcart. Jinak by se objednávka uložila bez platby.
+  if(isCardPayment && !isGoPayActive() && !isSnipcartActive()){
+    alert('⚠️ Online platby kartou momentálně nejsou dostupné.\n\nVyber prosím jinou metodu (bankovní převod nebo dobírka).\n\nPokud chyba přetrvává, kontaktuj nás na ' + (getSettings().contactEmail || 'eshophopivirtual@gmail.com') + '.');
+    return;
+  }
+  
   if(isCardPayment && isGoPayActive()){
     payViaGoPay(order);
     return;
@@ -3250,17 +3326,15 @@ const PAYMENT_METHODS_META = [
 ];
 
 function getPaymentMethodsConfig(){
-  const stored = localStorage.getItem('hopi_payment_methods');
-  if(stored){
-    try { return JSON.parse(stored); } catch(e){}
-  }
+  const stored = getAppSetting('payment_methods');
+  if(stored) return stored;
   // default — vše zapnuté kromě Google Pay (musí se zapnout u GoPay zvlášť)
   const def = {};
   for(const m of PAYMENT_METHODS_META) def[m.key] = m.defaultEnabled;
   return def;
 }
-function setPaymentMethodsConfig(cfg){
-  localStorage.setItem('hopi_payment_methods', JSON.stringify(cfg));
+async function setPaymentMethodsConfig(cfg){
+  return await saveAppSetting('payment_methods', cfg);
 }
 function isPaymentMethodEnabled(key){
   return !!getPaymentMethodsConfig()[key];
@@ -3281,10 +3355,10 @@ function renderPaymentOptions(){
 }
 
 function getGopayConfig(){
-  return JSON.parse(localStorage.getItem('hopi_gopay_config')||'{"enabled":false,"goid":"","mode":"test"}');
+  return getAppSetting('gopay_config', {enabled:false, goid:"", mode:"test"});
 }
-function setGopayConfig(c){
-  localStorage.setItem('hopi_gopay_config', JSON.stringify(c));
+async function setGopayConfig(c){
+  return await saveAppSetting('gopay_config', c);
 }
 function isGoPayActive(){
   const c = getGopayConfig();
@@ -5992,7 +6066,7 @@ function renderPaymentMethodsSection(){
   `;
 }
 
-window.savePaymentMethods = function(){
+window.savePaymentMethods = async function(){
   const cfg = {};
   document.querySelectorAll('.payment-method-toggle').forEach(el => {
     cfg[el.dataset.method] = el.checked;
@@ -6001,18 +6075,27 @@ window.savePaymentMethods = function(){
     alert('⚠️ Musíš mít zapnutou alespoň jednu platební metodu.');
     return;
   }
-  setPaymentMethodsConfig(cfg);
-  showToast('💾 Platební metody uloženy');
-  setTimeout(() => viewAdmin(), 300);
+  showToast('💾 Ukládám do Supabase...');
+  const ok = await setPaymentMethodsConfig(cfg);
+  if(ok){
+    showToast('✅ Platební metody uloženy (sdílené pro všechny zákazníky)');
+    setTimeout(() => viewAdmin(), 400);
+  } else {
+    alert('❌ Uložení selhalo. Zkontroluj připojení k Supabase a zda existuje tabulka app_settings.');
+  }
 }
 
-window.resetPaymentMethods = function(){
+window.resetPaymentMethods = async function(){
   if(!confirm('Obnovit výchozí nastavení platebních metod?\n\nKarta, Apple Pay, Převod a Dobírka budou zapnuté. Google Pay vypnutý.')) return;
   const def = {};
   for(const m of PAYMENT_METHODS_META) def[m.key] = m.defaultEnabled;
-  setPaymentMethodsConfig(def);
-  showToast('↺ Obnoveno výchozí nastavení');
-  setTimeout(() => viewAdmin(), 300);
+  const ok = await setPaymentMethodsConfig(def);
+  if(ok){
+    showToast('↺ Obnoveno výchozí nastavení');
+    setTimeout(() => viewAdmin(), 400);
+  } else {
+    alert('❌ Uložení selhalo.');
+  }
 }
 
 function renderGoPaySection(){
@@ -6105,7 +6188,7 @@ function renderGoPaySection(){
   `;
 }
 
-window.saveGopayConfig = function(){
+window.saveGopayConfig = async function(){
   const cfg = getGopayConfig();
   cfg.goid = document.getElementById('gopayGoid').value.trim();
   cfg.mode = document.querySelector('input[name="gopayMode"]:checked').value;
@@ -6114,9 +6197,14 @@ window.saveGopayConfig = function(){
     alert('⚠️ Pro aktivaci musíš vyplnit GoID.');
     return;
   }
-  setGopayConfig(cfg);
-  showToast('💾 GoPay nastavení uloženo');
-  setTimeout(() => viewAdmin(), 300);
+  showToast('💾 Ukládám do Supabase...');
+  const ok = await setGopayConfig(cfg);
+  if(ok){
+    showToast('✅ GoPay nastavení uloženo (sdílené pro všechny zákazníky)');
+    setTimeout(() => viewAdmin(), 400);
+  } else {
+    alert('❌ Uložení selhalo. Zkontroluj připojení k Supabase a zda existuje tabulka app_settings.');
+  }
 }
 
 window.testGopayConnection = async function(){
