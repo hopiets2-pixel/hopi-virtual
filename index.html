@@ -3570,6 +3570,11 @@ async function handleGoPayReturn(){
       
       // Sync do Supabase
       if(_supabaseReady) saveOrderToSupabase(lastOrder);
+
+      // Auto-vytvoření zásilky v Packeta po úspěšné platbě kartou
+      if(data.state === 'PAID' && lastOrder.ship === 'zasilkovna' && lastOrder.packeta_point_id){
+        createPacketaShipment(lastOrder).catch(e=>console.warn('Packeta (GoPay) error:',e));
+      }
     }
     
     // Vyčistit pending markers
