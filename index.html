@@ -1049,7 +1049,8 @@ function saveComplaint(c){const list=getComplaints();list.unshift(c);setComplain
 // ===== PAYMENT STATUS =====
 // Možné hodnoty: 'pending' (čeká), 'paid' (zaplaceno), 'cod' (dobírka)
 function getPaymentStatus(order){
-  if(order.paymentStatus)return order.paymentStatus;
+  const VALID=['pending','paid','cod'];
+  if(order.paymentStatus&&VALID.includes(order.paymentStatus))return order.paymentStatus;
   // Výchozí podle typu platby
   if(order.pay==='cod')return 'cod';
   if(['card','applepay','googlepay'].includes(order.pay))return 'paid';
