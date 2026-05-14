@@ -3026,8 +3026,7 @@ function viewCheckout(){
               </datalist>
               <div style="font-size:11px;color:var(--muted);margin-top:6px;font-family:'JetBrains Mono',monospace">💡 Můžeš napsat i vlastní — např. "Kolín, Kutnohorská 12"</div>
             </div>
-            <label class="option" data-ship="ppl" data-price="${subtotal>=freeOver?0:99}"><input type="radio" name="ship" onchange="toggleZasilkovna()"><div class="option-text"><strong>PPL k ruce</strong><span>1–2 dny · přímo na adresu</span></div><div class="option-price">${subtotal>=freeOver?'Zdarma':'99 Kč'}</div></label>
-            <label class="option" data-ship="kuryr" data-price="149"><input type="radio" name="ship" onchange="toggleZasilkovna()"><div class="option-text"><strong>Kurýr (Praha)</strong><span>Dnes do 3 h</span></div><div class="option-price">149 Kč</div></label>
+
 
             <h2><span class="num">5</span>Platba</h2>
             ${renderPaymentOptions()}
@@ -4101,8 +4100,7 @@ function viewInfo({t='doprava'}={}){
       <h2 style="font-family:'Archivo Black',sans-serif;font-size:20px;margin-bottom:14px;margin-top:24px;text-transform:uppercase">📦 Způsoby dopravy</h2>
       <ul style="padding-left:24px;line-height:1.8">
         <li><strong style="color:#fff">Zásilkovna</strong> — 79 Kč (zdarma nad 1 500 Kč) · doručení 1–2 pracovní dny</li>
-        <li><strong style="color:#fff">PPL k ruce</strong> — 99 Kč (zdarma nad 1 500 Kč) · přímo na adresu</li>
-        <li><strong style="color:#fff">Kurýr Praha</strong> — 149 Kč · dnes do 3 hodin</li>
+
       </ul>
       <h2 style="font-family:'Archivo Black',sans-serif;font-size:20px;margin-bottom:14px;margin-top:24px;text-transform:uppercase">💳 Platba</h2>
       <ul style="padding-left:24px;line-height:1.8">
