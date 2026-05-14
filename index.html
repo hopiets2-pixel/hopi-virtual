@@ -1016,10 +1016,28 @@ async function createPacketaShipment(order){
     const {data,error}=await supabaseClient.functions.invoke('create-packeta-shipment',{body:{orderId:order.id}});
     if(error)throw error;
     console.log('📦 Packeta zásilka vytvořena:',data);
-    if(data?.barcode){showToast('📦 Zásilka vytvořena v Packeta clientu');}
+    if(data?.barcode){
+      showToast('📦 Zásilka vytvořena v Packeta clientu');
+      // Uložit tracking číslo do lokální objednávky
+      // (email se pošle až David změní stav na "Odesláno" v adminu)
+      const updatedOrder={
+        ...order,
+        packeta_barcode:data.barcode,
+        packeta_shipment_id:data.packetId,
+        tracking:{
+          ...(order.tracking||{}),
+          number:data.barcode,
+          carrier:'Zásilkovna',
+          url:'https://tracking.packeta.com/?id='+data.barcode
+        }
+      };
+      const orders=getOrders();
+      const idx=orders.findIndex(o=>o.id===order.id);
+      if(idx>=0){orders[idx]=updatedOrder;setOrders(orders);}
+      localStorage.setItem('hopi_last_order',JSON.stringify(updatedOrder));
+    }
   }catch(e){
     console.warn('Packeta shipment creation failed:',e);
-    // Zákazník nic nevidí — objednávka je uložena, zásilka se vytvoří manuálně
   }
 }
 
@@ -5716,7 +5734,14 @@ window.markAsPaid=function(id){
   o.paidAt=Date.now();
   setOrders(orders);
   updateOrderInSheets(id,{paymentStatus:'paid',paidAt:o.paidAt}).catch(()=>{});
+  if(_supabaseReady) saveOrderToSupabase(o);
   showToast('✅ Objednávka označena jako zaplacená');
+  // Vytvořit zásilku v Packeta — jen pro bankovní převod
+  // (dobírka a karta se vytváří automaticky při objednávce/platbě)
+  if(o.ship==='zasilkovna' && o.packeta_point_id && o.pay==='transfer'){
+    showToast('📦 Vytvářím zásilku v Packeta...');
+    createPacketaShipment(o).catch(e=>console.warn('Packeta error:',e));
+  }
   viewAdmin();
 }
 
