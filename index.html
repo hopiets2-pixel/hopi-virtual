@@ -1001,11 +1001,40 @@ async function saveOrderToSupabase(order){
         customer_email: order.customer?.email || '',
         customer_phone: order.customer?.phone || '',
         total: order.total,
+        packeta_point_id: order.packeta_point_id || null,
+        packeta_point_name: order.packeta_point_name || null,
         data: order
       }, { onConflict: 'id' });
     if (error) { console.warn('Order save fail:', error.message); return false; }
     return true;
   } catch(e){ console.warn('Order save error:', e); return false; }
+}
+
+// ===== PACKETA ZÁSILKA =====
+async function createPacketaShipment(order){
+  try{
+    const {data,error}=await supabaseClient.functions.invoke('create-packeta-shipment',{body:{orderId:order.id}});
+    if(error)throw error;
+    console.log('📦 Packeta zásilka vytvořena:',data);
+    if(data?.barcode){showToast('📦 Zásilka vytvořena v Packeta clientu');}
+  }catch(e){
+    console.warn('Packeta shipment creation failed:',e);
+    // Zákazník nic nevidí — objednávka je uložena, zásilka se vytvoří manuálně
+  }
+}
+
+window.createPacketaShipmentAdmin=async function(orderId){
+  const orders=getOrders();
+  const o=orders.find(x=>x.id===orderId);
+  if(!o){showToast('Objednávka nenalezena','error');return;}
+  if(!o.packeta_point_id){showToast('❌ Objednávka nemá ID pobočky Zásilkovny','error');return;}
+  showToast('📦 Vytvářím zásilku v Packeta...');
+  try{
+    const {data,error}=await supabaseClient.functions.invoke('create-packeta-shipment',{body:{orderId}});
+    if(error)throw error;
+    showToast('✅ Zásilka vytvořena! Barcode: '+(data?.barcode||'OK'));
+    viewAdmin();
+  }catch(e){showToast('❌ Chyba: '+e.message,'error');}
 }
 
 async function deleteOrderFromSupabase(id){
@@ -2986,41 +3015,19 @@ function viewCheckout(){
             <h2><span class="num">4</span>Doprava</h2>
             <label class="option selected" data-ship="zasilkovna" data-price="${shipDefault}"><input type="radio" name="ship" checked onchange="toggleZasilkovna()"><div class="option-text"><strong>Zásilkovna</strong><span>Pobočka dle výběru · 1–2 pracovní dny</span></div><div class="option-price">${shipDefault===0?'Zdarma':formatPrice(shipBase)+' Kč'}</div></label>
             <div id="zasilkovnaPicker" style="margin:-6px 0 10px 0;padding:14px 16px;background:rgba(0,138,63,0.05);border:1px solid rgba(0,138,63,0.2)">
-              <label style="display:block;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green-glow);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">📍 Vyber pobočku Zásilkovny</label>
-              <input type="text" class="form-input" id="zasilkovnaBranch" list="zasBranches" placeholder="Začni psát město nebo název pobočky..." style="font-size:14px">
-              <datalist id="zasBranches">
-                <option value="Praha 1 — Václavské náměstí">
-                <option value="Praha 2 — Vinohradská">
-                <option value="Praha 3 — Flora">
-                <option value="Praha 4 — Pankrác (OC Arkády)">
-                <option value="Praha 5 — Anděl (Nový Smíchov)">
-                <option value="Praha 6 — Dejvická">
-                <option value="Praha 7 — Holešovice (Tesco)">
-                <option value="Praha 8 — Palmovka">
-                <option value="Praha 9 — Letňany">
-                <option value="Praha 10 — Eden">
-                <option value="Brno — Hlavní nádraží">
-                <option value="Brno — Galerie Vaňkovka">
-                <option value="Brno — Olympia Modřice">
-                <option value="Ostrava — Centrum">
-                <option value="Ostrava — Forum Nová Karolina">
-                <option value="Plzeň — Americká">
-                <option value="Plzeň — Plzeň Plaza">
-                <option value="Liberec — Forum">
-                <option value="Olomouc — Centrum">
-                <option value="České Budějovice — Centrum">
-                <option value="Hradec Králové — Centrum">
-                <option value="Pardubice — Afi Palác">
-                <option value="Ústí nad Labem — Forum">
-                <option value="Zlín — Golden Apple">
-                <option value="Karlovy Vary — Centrum">
-                <option value="Jihlava — City Park">
-                <option value="Kladno — Central">
-                <option value="Most — Central">
-                <option value="Opava — Breda & Weinstein">
-                <option value="Mladá Boleslav — Bondy Centrum">
-              </datalist>
-              <div style="font-size:11px;color:var(--muted);margin-top:6px;font-family:'JetBrains Mono',monospace">💡 Můžeš napsat i vlastní — např. "Kolín, Kutnohorská 12"</div>
+              <label style="display:block;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green-glow);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px">📍 Vyber pobočku Zásilkovny</label>
+              <div id="packetaBranchSelected" style="display:none;margin-bottom:10px;padding:10px 12px;background:rgba(0,138,63,0.1);border:1px solid rgba(0,200,83,0.35);align-items:center;gap:10px">
+                <span style="font-size:18px;flex-shrink:0">📍</span>
+                <div style="flex:1;min-width:0">
+                  <div id="packetaBranchName" style="font-size:14px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+                  <div id="packetaBranchCity" style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px"></div>
+                </div>
+                <span style="color:var(--green-glow);font-size:18px;flex-shrink:0">✓</span>
+              </div>
+              <button type="button" class="btn btn-outline btn-sm" id="packetaPickBtn" onclick="openPacketaWidgetCheckout()" style="gap:8px">
+                🗺️ Zvolit pobočku k vyzvednutí
+              </button>
+              <div style="font-size:11px;color:var(--muted);margin-top:8px;font-family:'JetBrains Mono',monospace">Přes 8 000 poboček a Z-BOXů po celé ČR</div>
             </div>
             ${(()=>{const sc=getShippingConfig();return sc.pplEnabled?`<label class="option" data-ship="ppl" data-price="${subtotal>=freeOver?0:99}"><input type="radio" name="ship" onchange="toggleZasilkovna()"><div class="option-text"><strong>PPL k ruce</strong><span>1–2 dny · přímo na adresu</span></div><div class="option-price">${subtotal>=freeOver?'Zdarma':'99 Kč'}</div></label>`:''})()}
             ${(()=>{const sc=getShippingConfig();return sc.kuryrEnabled?`<label class="option" data-ship="kuryr" data-price="149"><input type="radio" name="ship" onchange="toggleZasilkovna()"><div class="option-text"><strong>Kurýr (Praha)</strong><span>Dnes do 3 h</span></div><div class="option-price">149 Kč</div></label>`:''})()}
@@ -3067,11 +3074,55 @@ function viewCheckout(){
   toggleZasilkovna();
 }
 
+// ===== PACKETA STATE =====
+let _packetaPointId='';
+let _packetaPointName='';
+
 window.toggleZasilkovna=function(){
   const picker=document.getElementById('zasilkovnaPicker');
   if(!picker)return;
   const isZas=document.querySelector('.option[data-ship="zasilkovna"]')?.classList.contains('selected');
   picker.style.display=isZas?'block':'none';
+  // Reset výběru pobočky pokud zákazník přepnul na jinou dopravu
+  if(!isZas){_packetaPointId='';_packetaPointName='';_packetaResetUI();}
+}
+
+function _packetaResetUI(){
+  const sel=document.getElementById('packetaBranchSelected');
+  const btn=document.getElementById('packetaPickBtn');
+  if(sel)sel.style.display='none';
+  if(btn)btn.textContent='🗺️ Zvolit pobočku k vyzvednutí';
+}
+
+window.openPacketaWidgetCheckout=function(){
+  const config=getShippingConfig();
+  if(!config.packetaApiKey){showToast('❌ Zásilkovna není nakonfigurována v adminu','error');return;}
+  const doOpen=()=>{
+    try{
+      Packeta.Widget.pick(config.packetaApiKey,function(point){
+        if(!point)return;
+        _packetaPointId=String(point.id);
+        _packetaPointName=point.name;
+        const nameEl=document.getElementById('packetaBranchName');
+        const cityEl=document.getElementById('packetaBranchCity');
+        const selEl=document.getElementById('packetaBranchSelected');
+        const btn=document.getElementById('packetaPickBtn');
+        if(nameEl)nameEl.textContent=point.name;
+        if(cityEl)cityEl.textContent=(point.street?point.street+', ':'')+(point.city||'')+(point.zip?' '+point.zip:'');
+        if(selEl){selEl.style.display='flex';}
+        if(btn)btn.textContent='🔄 Změnit pobočku';
+        showToast('✅ Pobočka zvolena: '+point.name);
+      },{country:config.defaultCountry||'cz',language:'cs'});
+    }catch(e){showToast('❌ Chyba widgetu: '+e.message,'error');}
+  };
+  if(typeof Packeta==='undefined'){
+    showToast('🔌 Načítám Zásilkovna widget...');
+    const s=document.createElement('script');
+    s.src='https://widget.packeta.com/v6/www/js/library.js';
+    s.onload=doOpen;
+    s.onerror=()=>showToast('❌ Nepodařilo se načíst widget','error');
+    document.head.appendChild(s);
+  }else{doOpen();}
 }
 
 window.submitOrder=function(){
@@ -3087,10 +3138,11 @@ window.submitOrder=function(){
   const shipPrice=Number(shipOpt.dataset.price);
   const wantInvoice=document.getElementById('wantInvoice')?.checked||false;
   const shipCarrier=shipOpt.dataset.ship;
-  const zasilkovnaBranch=shipCarrier==='zasilkovna'?(document.getElementById('zasilkovnaBranch')?.value||'').trim():'';
-  if(shipCarrier==='zasilkovna'&&!zasilkovnaBranch){
+  const zasilkovnaBranch=shipCarrier==='zasilkovna'?_packetaPointName:'';
+  const zasilkovnaPointId=shipCarrier==='zasilkovna'?_packetaPointId:'';
+  if(shipCarrier==='zasilkovna'&&!zasilkovnaPointId){
     showToast('Vyber pobočku Zásilkovny','error');
-    document.getElementById('zasilkovnaBranch')?.focus();
+    document.getElementById('packetaPickBtn')?.focus();
     return;
   }
 
@@ -3118,6 +3170,8 @@ window.submitOrder=function(){
     }:null,
     ship:shipOpt.dataset.ship,
     shipBranch:zasilkovnaBranch,
+    packeta_point_id:zasilkovnaPointId,
+    packeta_point_name:zasilkovnaBranch,
     pay:payOpt.dataset.pay,
     paymentStatus:(payOpt.dataset.pay==='cod'?'cod':(['card','applepay','googlepay'].includes(payOpt.dataset.pay)?'pending':'pending')),
     subtotal,
@@ -3163,6 +3217,10 @@ window.submitOrder=function(){
   order.items.forEach(i=>decreaseStock(i.productId,i.qty));
   setCart([]);
   setAppliedPromo(null);
+  // Auto-vytvoření zásilky v Packeta (pokud Zásilkovna)
+  if(order.ship==='zasilkovna'&&order.packeta_point_id){
+    createPacketaShipment(order).catch(e=>console.warn('Packeta shipment error:',e));
+  }
   // Poslat do Google Sheets (pokud nastaveno)
   pushOrderToSheets(order).catch(()=>{});
   // Auto potvrzovací e-mail zákazníkovi
@@ -5559,6 +5617,7 @@ function viewOrderDetail(id){
             <h3>Informace</h3>
             <div class="detail-line"><span class="k">Doprava</span><span>${shipL}</span></div>
             ${o.shipBranch?`<div class="detail-line"><span class="k">Pobočka</span><span style="font-weight:600;color:#111">📍 ${escapeHtml(o.shipBranch)}</span></div>`:''}
+            ${o.ship==='zasilkovna'?`<div class="detail-line" style="align-items:flex-start"><span class="k">Packeta</span><div>${o.packeta_point_id?`<div style="font-size:11px;color:#555;font-family:'JetBrains Mono',monospace;margin-bottom:8px">ID pobočky: ${escapeHtml(o.packeta_point_id)}</div>`:''}<button class="abtn abtn-sm abtn-primary" onclick="createPacketaShipmentAdmin('${o.id}')">📦 Vytvořit zásilku v Packeta</button></div></div>`:''}
             <div class="detail-line"><span class="k">Platba</span><span>${payL}</span></div>
             <div class="detail-line" style="align-items:center">
               <span class="k">Stav platby</span>
