@@ -3027,8 +3027,8 @@ function viewCheckout(){
               </datalist>
               <div style="font-size:11px;color:var(--muted);margin-top:6px;font-family:'JetBrains Mono',monospace">💡 Můžeš napsat i vlastní — např. "Kolín, Kutnohorská 12"</div>
             </div>
-            <label class="option" data-ship="ppl" data-price="${subtotal>=freeOver?0:99}"><input type="radio" name="ship" onchange="toggleZasilkovna()"><div class="option-text"><strong>PPL k ruce</strong><span>1–2 dny · přímo na adresu</span></div><div class="option-price">${subtotal>=freeOver?'Zdarma':'99 Kč'}</div></label>
-            <label class="option" data-ship="kuryr" data-price="149"><input type="radio" name="ship" onchange="toggleZasilkovna()"><div class="option-text"><strong>Kurýr (Praha)</strong><span>Dnes do 3 h</span></div><div class="option-price">149 Kč</div></label>
+            ${(()=>{const sc=getShippingConfig();return sc.pplEnabled?`<label class="option" data-ship="ppl" data-price="${subtotal>=freeOver?0:99}"><input type="radio" name="ship" onchange="toggleZasilkovna()"><div class="option-text"><strong>PPL k ruce</strong><span>1–2 dny · přímo na adresu</span></div><div class="option-price">${subtotal>=freeOver?'Zdarma':'99 Kč'}</div></label>`:''})()}
+            ${(()=>{const sc=getShippingConfig();return sc.kuryrEnabled?`<label class="option" data-ship="kuryr" data-price="149"><input type="radio" name="ship" onchange="toggleZasilkovna()"><div class="option-text"><strong>Kurýr (Praha)</strong><span>Dnes do 3 h</span></div><div class="option-price">149 Kč</div></label>`:''})()}
 
             <h2><span class="num">5</span>Platba</h2>
             ${renderPaymentOptions()}
@@ -6292,7 +6292,9 @@ window.testSnipcartConnection=async function(){
 
 // ============== SHIPPING (ZÁSILKOVNA) SETTINGS ==============
 function getShippingConfig(){
-  return JSON.parse(localStorage.getItem('hopi_shipping_config')||'{"provider":"none","packetaApiKey":"","packetaEnabled":false,"defaultCountry":"cz"}');
+  const def={provider:'none',packetaApiKey:'',packetaEnabled:false,defaultCountry:'cz',pplEnabled:false,kuryrEnabled:false};
+  const saved=JSON.parse(localStorage.getItem('hopi_shipping_config')||'{}');
+  return Object.assign({},def,saved);
 }
 function setShippingConfig(c){
   localStorage.setItem('hopi_shipping_config',JSON.stringify(c));
@@ -6363,6 +6365,35 @@ function viewShippingSettings(){
     </div>
 
     <div style="background:#fff;padding:24px;border:1px solid var(--border);max-width:800px;margin-top:24px">
+      <h3 style="font-family:'Archivo Black',sans-serif;font-size:16px;text-transform:uppercase;margin-bottom:20px">🚚 Aktivní dopravci</h3>
+      <p style="font-size:13px;color:#666;margin-bottom:20px;line-height:1.6">Zaškrtnuté dopravce uvidí zákazník při výběru dopravy v checkoutu. Zásilkovna je vždy aktivní.</p>
+
+      <div class="form-group" style="margin-bottom:16px">
+        <label style="display:flex;gap:12px;padding:14px 16px;border:2px solid ${config.pplEnabled?'var(--green)':'#ddd'};cursor:pointer;background:${config.pplEnabled?'rgba(0,138,63,0.05)':'#fff'}">
+          <input type="checkbox" id="pplEnabled" ${config.pplEnabled?'checked':''} style="accent-color:var(--green);margin-top:3px;width:18px;height:18px">
+          <div style="flex:1">
+            <div style="font-weight:700;margin-bottom:4px">🟠 PPL k ruce</div>
+            <div style="font-size:13px;color:#555;line-height:1.6">Doručení přímo na adresu · 1–2 pracovní dny · 99 Kč</div>
+          </div>
+        </label>
+      </div>
+
+      <div class="form-group" style="margin-bottom:24px">
+        <label style="display:flex;gap:12px;padding:14px 16px;border:2px solid ${config.kuryrEnabled?'var(--green)':'#ddd'};cursor:pointer;background:${config.kuryrEnabled?'rgba(0,138,63,0.05)':'#fff'}">
+          <input type="checkbox" id="kuryrEnabled" ${config.kuryrEnabled?'checked':''} style="accent-color:var(--green);margin-top:3px;width:18px;height:18px">
+          <div style="flex:1">
+            <div style="font-weight:700;margin-bottom:4px">🏍️ Kurýr (Praha)</div>
+            <div style="font-size:13px;color:#555;line-height:1.6">Expresní doručení v Praze · dnes do 3 h · 149 Kč</div>
+          </div>
+        </label>
+      </div>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap;padding-top:20px;border-top:1px solid #eee">
+        <button class="abtn abtn-primary" onclick="saveShippingCarriers()">💾 Uložit dopravce</button>
+      </div>
+    </div>
+
+    <div style="background:#fff;padding:24px;border:1px solid var(--border);max-width:800px;margin-top:24px">
       <h3 style="font-family:'Archivo Black',sans-serif;font-size:16px;text-transform:uppercase;margin-bottom:12px">🚚 Další dopravci (později)</h3>
       <div style="font-size:14px;color:#555;line-height:1.7">
         <p style="margin-bottom:10px">V dalším kroku můžeme přidat:</p>
@@ -6386,6 +6417,15 @@ window.saveShippingConfig=function(){
   config.defaultCountry=document.getElementById('packetaCountry').value;
   setShippingConfig(config);
   showToast('💾 Nastavení uloženo');
+  setTimeout(()=>viewAdmin(),300);
+}
+
+window.saveShippingCarriers=function(){
+  const config=getShippingConfig();
+  config.pplEnabled=document.getElementById('pplEnabled').checked;
+  config.kuryrEnabled=document.getElementById('kuryrEnabled').checked;
+  setShippingConfig(config);
+  showToast('💾 Dopravci uloženi');
   setTimeout(()=>viewAdmin(),300);
 }
 
