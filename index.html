@@ -2536,7 +2536,7 @@ function render(){
   document.body.classList.remove('admin-body');
   const {path,params}=getRoute();
   const views={
-    home:viewHome,product:viewProduct,cart:viewCart,checkout:viewCheckout,success:viewSuccess,
+    home:viewHome,product:viewProduct,cart:viewCart,checkout:viewCheckout,success:viewSuccess,'payment-cancelled':viewPaymentCancelled,
     track:viewTrack,trackOrder:viewTrackOrder,
     login:viewLogin,register:viewRegister,account:viewAccount,info:viewInfo,
     complaint:viewComplaint,
@@ -3603,11 +3603,17 @@ async function handleGoPayReturn(){
     if(data.state === 'PAID' || data.state === 'AUTHORIZED'){
       go('success');
     } else {
-      // Neúspěšná platba — vrátit na success page s informací
-      go('success');
-      setTimeout(() => {
-        showToast('⚠️ Platba nebyla dokončena (stav: ' + (data.state||'neznámý') + ')', 'error');
-      }, 500);
+      // Neúspěšná platba — smazat objednávku a zobrazit stránku zrušení
+      if(lastOrder) {
+        // Smazat z localStorage orders pole
+        const allOrders = getOrders();
+        const filtered = allOrders.filter(o => o.id !== lastOrder.id);
+        safeLSset('hopi_orders', JSON.stringify(filtered));
+        safeLSremove('hopi_last_order');
+        // Smazat ze Supabase (objednávka nebyla zaplacena)
+        if(_supabaseReady) deleteOrderFromSupabase(lastOrder.id);
+      }
+      go('payment-cancelled');
     }
     
   } catch(e){
@@ -3717,6 +3723,27 @@ function viewSuccess(){
 }
 
 // ============== GUEST ORDER TRACKING ==============
+function viewPaymentCancelled(){
+  document.getElementById('app').innerHTML = `
+    ${renderNavbar()}
+    <main class="page" style="min-height:70vh;display:flex;align-items:center;justify-content:center">
+      <div style="text-align:center;padding:40px 24px;max-width:480px;margin:0 auto">
+        <div style="font-size:64px;margin-bottom:20px">❌</div>
+        <h2 style="font-family:'Archivo Black',sans-serif;color:var(--red);margin-bottom:14px;text-transform:uppercase;letter-spacing:0.05em">Objednávka zrušena</h2>
+        <div style="background:rgba(229,57,53,0.08);border:1px solid rgba(229,57,53,0.25);padding:20px 24px;margin-bottom:24px;text-align:left">
+          <p style="color:#ccc;line-height:1.7;margin:0 0 8px 0">Platba nebyla dokončena, a proto jsme tvou objednávku automaticky <strong style="color:var(--red)">zrušili</strong>.</p>
+          <p style="color:var(--muted);line-height:1.7;margin:0;font-size:14px">Žádná částka ti nebyla stržena. Pokud chceš objednat znovu, vráť se do obchodu.</p>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="go('home')" style="min-width:160px">🛒 Zpět do obchodu</button>
+          <button class="btn" onclick="go('cart')" style="background:transparent;border:1px solid var(--border);color:#ccc;min-width:140px">Zpět do košíku</button>
+        </div>
+      </div>
+    </main>
+    ${renderFooter()}
+  `;
+}
+
 function viewTrack(){
   document.getElementById('app').innerHTML=`
     ${renderNavbar()}
