@@ -3577,7 +3577,7 @@ async function handleGoPayReturn(){
       lastOrder.gopayPaymentId = paymentId;
       lastOrder.gopayState = data.state;
       
-      // Update localStorage
+      // Update localStorage vždy (pro případ obnovení stránky)
       const orders = getOrders();
       const idx = orders.findIndex(o => o.id === lastOrder.id);
       if(idx >= 0){
@@ -3585,14 +3585,9 @@ async function handleGoPayReturn(){
         safeLSset('hopi_orders', JSON.stringify(orders));
       }
       safeLSset('hopi_last_order', JSON.stringify(lastOrder));
-      
-      // Sync do Supabase
-      if(_supabaseReady) saveOrderToSupabase(lastOrder);
 
-      // Auto-vytvoření zásilky v Packeta po úspěšné platbě kartou
-      if(data.state === 'PAID' && lastOrder.ship === 'zasilkovna' && lastOrder.packeta_point_id){
-        createPacketaShipment(lastOrder).catch(e=>console.warn('Packeta (GoPay) error:',e));
-      }
+      // POZNÁMKA: saveOrderToSupabase se volá POUZE při úspěšné platbě níže
+      // — aby se předešlo race condition (save vs delete)
     }
     
     // Vyčistit pending markers
@@ -3601,16 +3596,21 @@ async function handleGoPayReturn(){
     
     // Zobrazit success / failure
     if(data.state === 'PAID' || data.state === 'AUTHORIZED'){
+      // ✅ Úspěšná platba — uložit do Supabase + Packeta zásilka
+      if(lastOrder && _supabaseReady) saveOrderToSupabase(lastOrder);
+      if(lastOrder && data.state === 'PAID' && lastOrder.ship === 'zasilkovna' && lastOrder.packeta_point_id){
+        createPacketaShipment(lastOrder).catch(e=>console.warn('Packeta (GoPay) error:',e));
+      }
       go('success');
     } else {
-      // Neúspěšná platba — smazat objednávku a zobrazit stránku zrušení
+      // ❌ Neúspěšná platba — smazat objednávku (nikdy nebyla uložena do Supabase)
       if(lastOrder) {
-        // Smazat z localStorage orders pole
+        // Smazat z localStorage
         const allOrders = getOrders();
         const filtered = allOrders.filter(o => o.id !== lastOrder.id);
         safeLSset('hopi_orders', JSON.stringify(filtered));
         safeLSremove('hopi_last_order');
-        // Smazat ze Supabase (objednávka nebyla zaplacena)
+        // Smazat ze Supabase pro jistotu (webhook mohl uložit dříve)
         if(_supabaseReady) deleteOrderFromSupabase(lastOrder.id);
       }
       go('payment-cancelled');
