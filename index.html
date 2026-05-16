@@ -7652,7 +7652,7 @@ function fallbackCopy(text){
   document.body.removeChild(ta);
 }
 
-window.issueInvoice=function(orderId){
+window.issueInvoice=async function(orderId){
   const orders=getOrders();
   const o=orders.find(x=>x.id===orderId);
   if(!o){showToast('Objednávka nenalezena','error');return}
@@ -7661,37 +7661,65 @@ window.issueInvoice=function(orderId){
     showToast('⚠️ Nejdřív zapni fakturaci v nastavení','error');
     return;
   }
-  if(!config.clientId||!config.clientSecret){
-    showToast('⚠️ Nejdřív vyplň API údaje iDoklad','error');
-    return;
+
+  showToast('⏳ Vystavuji fakturu v iDokladu…');
+
+  try{
+    const products=getProducts();
+    const SUPABASE_URL='https://jaktgczqpwxhxxtqfvam.supabase.co';
+    const SUPABASE_ANON_KEY='sb_publishable_JZ14aScZgNNtFIxqMunKAg_3waSj_dU';
+
+    const res=await fetch(SUPABASE_URL+'/functions/v1/idoklad-create-invoice',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer '+SUPABASE_ANON_KEY,
+      },
+      body:JSON.stringify({
+        order:o,
+        products:products,
+        config:{
+          companyName:config.companyName,
+          companyIco:config.companyIco,
+          companyDic:config.companyDic,
+          companyAddress:config.companyAddress,
+        },
+      }),
+    });
+
+    const data=await res.json();
+
+    if(!data.success){
+      throw new Error(data.error||'Neznámá chyba iDokladu');
+    }
+
+    const invoice={
+      id:'INV-'+Date.now(),
+      invoiceId:data.invoiceId,
+      invoiceNumber:data.invoiceNumber,
+      orderId:o.id,
+      customerName:o.customer.firstName+' '+o.customer.lastName,
+      customerEmail:o.customer.email,
+      total:o.total,
+      items:o.items,
+      createdAt:Date.now(),
+      idokladUrl:data.idokladUrl,
+    };
+    const log=getInvoicesLog();
+    log.unshift(invoice);
+    setInvoicesLog(log);
+
+    o.invoiceId=invoice.invoiceId||invoice.id;
+    o.invoiceNumber=data.invoiceNumber;
+    setOrders(orders);
+
+    showToast('✅ Faktura '+data.invoiceNumber+' vystavena v iDokladu');
+    viewAdmin();
+
+  }catch(err){
+    console.error('issueInvoice error:',err);
+    showToast('❌ Chyba při vystavení faktury: '+err.message,'error');
   }
-
-  // SIMULACE — v reálu by tu bylo volání iDoklad API
-  // Skutečné volání iDoklad API vyžaduje backend kvůli OAuth a CORS.
-  // Tady jen zaznamenáme fakturu jako "vystavenou" pro účely evidence.
-  const invoiceNumber='2026'+String(getInvoicesLog().length+1).padStart(4,'0');
-  const invoice={
-    id:'INV-'+Date.now(),
-    invoiceNumber,
-    orderId:o.id,
-    customerName:o.customer.firstName+' '+o.customer.lastName,
-    customerEmail:o.customer.email,
-    total:o.total,
-    items:o.items,
-    createdAt:Date.now(),
-    idokladUrl:`https://app.idoklad.cz/Invoices/${invoiceNumber}`,
-  };
-  const log=getInvoicesLog();
-  log.unshift(invoice);
-  setInvoicesLog(log);
-
-  // Uložit číslo faktury k objednávce
-  o.invoiceId=invoice.id;
-  o.invoiceNumber=invoiceNumber;
-  setOrders(orders);
-
-  showToast(`✅ Faktura ${invoiceNumber} vystavena`);
-  viewAdmin();
 }
 
 function viewFinance(){
