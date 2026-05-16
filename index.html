@@ -3016,6 +3016,7 @@ function viewCheckout(){
               <div class="form-group"><label class="form-label">Město</label><input type="text" class="form-input" id="city" required></div>
               <div class="form-group"><label class="form-label">PSČ</label><input type="text" class="form-input" id="zip" required></div>
             </div>
+            <div class="form-group"><label class="form-label">Stát</label><select class="form-select" id="country"><option value="cz">🇨🇿 Česká republika</option><option value="sk">🇸🇰 Slovensko</option></select></div>
 
             <h2><span class="num">3</span>Fakturační údaje (volitelné)</h2>
             <label style="display:flex;align-items:center;gap:10px;margin-bottom:16px;cursor:pointer;font-size:14px;color:var(--muted)">
@@ -3180,6 +3181,7 @@ window.submitOrder=function(){
       street:document.getElementById('street').value,
       city:document.getElementById('city').value,
       zip:document.getElementById('zip').value,
+      country:document.getElementById('country')?.value||'cz',
     },
     invoice:wantInvoice?{
       companyName:document.getElementById('companyName')?.value||'',
@@ -3600,6 +3602,13 @@ async function handleGoPayReturn(){
       if(lastOrder && _supabaseReady) saveOrderToSupabase(lastOrder);
       if(lastOrder && data.state === 'PAID' && lastOrder.ship === 'zasilkovna' && lastOrder.packeta_point_id){
         createPacketaShipment(lastOrder).catch(e=>console.warn('Packeta (GoPay) error:',e));
+      }
+      // 🧾 Auto-vystavení faktury pokud je zapnuto
+      if(lastOrder && data.state === 'PAID'){
+        const invConfig=getInvoiceConfig();
+        if(invConfig.enabled && invConfig.autoIssue && !lastOrder.invoiceId){
+          issueInvoice(lastOrder.id,{silent:true}).catch(e=>console.warn('Invoice (GoPay) error:',e));
+        }
       }
       go('success');
     } else {
@@ -7652,7 +7661,7 @@ function fallbackCopy(text){
   document.body.removeChild(ta);
 }
 
-window.issueInvoice=async function(orderId){
+window.issueInvoice=async function(orderId, opts={}){
   const orders=getOrders();
   const o=orders.find(x=>x.id===orderId);
   if(!o){showToast('Objednávka nenalezena','error');return}
@@ -7705,7 +7714,7 @@ window.issueInvoice=async function(orderId){
     setOrders(orders);
 
     showToast('✅ Faktura '+data.invoiceNumber+' vystavena v iDokladu');
-    viewAdmin();
+    if(!opts?.silent) viewAdmin();
 
   }catch(err){
     console.error('issueInvoice error:',err);
