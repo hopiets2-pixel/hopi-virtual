@@ -1720,7 +1720,7 @@ async function sendStatusEmail(order,newStatus,options={}){
   return {ok:logEntry.success,reason:logEntry.success?'sent':logEntry.error,logEntry};
 }
 
-function advanceOrderStatus(orderId){
+async function advanceOrderStatus(orderId){
   const orders=getOrders();
   const o=orders.find(x=>x.id===orderId);
   if(!o)return;
@@ -1739,11 +1739,27 @@ function advanceOrderStatus(orderId){
       try{issueInvoice(orderId);showToast('📄 Faktura automaticky vystavena')}catch(e){}
     },500);
   }
-  // Vytvořit zásilku v Packeta při odeslání (jedině zde, žádné duplicity)
+  // Vytvořit zásilku v Packeta při odeslání — ČEKAT než přijde tracking číslo, pak poslat email
   if(s.next==='shipped' && o.ship==='zasilkovna' && o.packeta_point_id){
-    createPacketaShipment(o).catch(e=>console.warn('Packeta (shipped) error:',e));
+    try{
+      await createPacketaShipment(o);
+      // Znovu načíst objednávku z localStorage — má teď tracking číslo
+      const freshOrders=getOrders();
+      const freshO=freshOrders.find(x=>x.id===orderId)||o;
+      sendStatusEmail(freshO,s.next).then(r=>{
+        if(r.ok)showToast('📧 E-mail zákazníkovi odeslán (sledovací číslo v emailu)');
+        else if(r.reason&&r.reason!=='already_sent'&&r.reason!=='disabled_for_status'&&r.reason!=='no_email'){
+          showToast('⚠️ E-mail se nepodařilo odeslat','error');
+        }
+      });
+    }catch(e){
+      console.warn('Packeta error při odeslání:',e);
+      // I přes chybu Packeta pošli email (bez tracking čísla)
+      sendStatusEmail(o,s.next).then(()=>{});
+    }
+    return;
   }
-  // Auto e-mail
+  // Pro ostatní dopravy — email hned
   sendStatusEmail(o,s.next).then(r=>{
     if(r.ok)showToast('📧 E-mail zákazníkovi odeslán');
     else if(r.reason&&r.reason!=='already_sent'&&r.reason!=='disabled_for_status'&&r.reason!=='no_email'){
