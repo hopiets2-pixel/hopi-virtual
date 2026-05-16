@@ -1739,6 +1739,10 @@ function advanceOrderStatus(orderId){
       try{issueInvoice(orderId);showToast('📄 Faktura automaticky vystavena')}catch(e){}
     },500);
   }
+  // Vytvořit zásilku v Packeta při odeslání (jedině zde, žádné duplicity)
+  if(s.next==='shipped' && o.ship==='zasilkovna' && o.packeta_point_id){
+    createPacketaShipment(o).catch(e=>console.warn('Packeta (shipped) error:',e));
+  }
   // Auto e-mail
   sendStatusEmail(o,s.next).then(r=>{
     if(r.ok)showToast('📧 E-mail zákazníkovi odeslán');
@@ -3237,10 +3241,6 @@ window.submitOrder=function(){
   order.items.forEach(i=>decreaseStock(i.productId,i.qty));
   setCart([]);
   setAppliedPromo(null);
-  // Auto-vytvoření zásilky v Packeta (pokud Zásilkovna)
-  if(order.ship==='zasilkovna'&&order.packeta_point_id){
-    createPacketaShipment(order).catch(e=>console.warn('Packeta shipment error:',e));
-  }
   // Poslat do Google Sheets (pokud nastaveno)
   pushOrderToSheets(order).catch(()=>{});
   // Auto potvrzovací e-mail zákazníkovi
@@ -3600,9 +3600,6 @@ async function handleGoPayReturn(){
     if(data.state === 'PAID' || data.state === 'AUTHORIZED'){
       // ✅ Úspěšná platba — uložit do Supabase + Packeta zásilka
       if(lastOrder && _supabaseReady) saveOrderToSupabase(lastOrder);
-      if(lastOrder && data.state === 'PAID' && lastOrder.ship === 'zasilkovna' && lastOrder.packeta_point_id){
-        createPacketaShipment(lastOrder).catch(e=>console.warn('Packeta (GoPay) error:',e));
-      }
       // 🧾 Auto-vystavení faktury pokud je zapnuto
       if(lastOrder && data.state === 'PAID'){
         const invConfig=getInvoiceConfig();
@@ -5772,12 +5769,6 @@ window.markAsPaid=function(id){
   updateOrderInSheets(id,{paymentStatus:'paid',paidAt:o.paidAt}).catch(()=>{});
   if(_supabaseReady) saveOrderToSupabase(o);
   showToast('✅ Objednávka označena jako zaplacená');
-  // Vytvořit zásilku v Packeta — jen pro bankovní převod
-  // (dobírka a karta se vytváří automaticky při objednávce/platbě)
-  if(o.ship==='zasilkovna' && o.packeta_point_id && o.pay==='transfer'){
-    showToast('📦 Vytvářím zásilku v Packeta...');
-    createPacketaShipment(o).catch(e=>console.warn('Packeta error:',e));
-  }
   viewAdmin();
 }
 
