@@ -7666,16 +7666,9 @@ window.issueInvoice=async function(orderId){
 
   try{
     const products=getProducts();
-    const SUPABASE_URL='https://jaktgczqpwxhxxtqfvam.supabase.co';
-    const SUPABASE_ANON_KEY='sb_publishable_JZ14aScZgNNtFIxqMunKAg_3waSj_dU';
 
-    const res=await fetch(SUPABASE_URL+'/functions/v1/idoklad-create-invoice',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'Authorization':'Bearer '+SUPABASE_ANON_KEY,
-      },
-      body:JSON.stringify({
+    const {data,error}=await supabaseClient.functions.invoke('idoklad-create-invoice',{
+      body:{
         order:o,
         products:products,
         config:{
@@ -7684,13 +7677,11 @@ window.issueInvoice=async function(orderId){
           companyDic:config.companyDic,
           companyAddress:config.companyAddress,
         },
-      }),
+      },
     });
 
-    const data=await res.json();
-
-    if(!data.success){
-      throw new Error(data.error||'Neznámá chyba iDokladu');
+    if(error||!data||!data.success){
+      throw new Error((error&&error.message)||(data&&data.error)||'Neznámá chyba iDokladu');
     }
 
     const invoice={
