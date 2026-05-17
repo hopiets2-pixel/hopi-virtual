@@ -919,6 +919,7 @@ const DEFAULT_SETTINGS={
   feature4Desc:'Každý drop v omezeném počtu.',
   freeShippingOver:1500,
   shippingPrice:79,
+  shippingPriceSK:null,  // null = stejná jako CZ; číslo = vlastní cena pro SK
 };
 
 // Init storage
@@ -3091,7 +3092,7 @@ function viewCheckout(){
               <div class="form-group"><label class="form-label">Město</label><input type="text" class="form-input" id="city" required></div>
               <div class="form-group"><label class="form-label">PSČ</label><input type="text" class="form-input" id="zip" required></div>
             </div>
-            <div class="form-group"><label class="form-label">Stát</label><select class="form-select" id="country"><option value="cz">🇨🇿 Česká republika</option><option value="sk">🇸🇰 Slovensko</option></select></div>
+            <div class="form-group"><label class="form-label">Stát doručení</label><select class="form-select" id="country" onchange="onDeliveryCountryChange()"><option value="cz">🇨🇿 Česká republika</option><option value="sk">🇸🇰 Slovensko</option></select></div>
 
             <h2><span class="num">3</span>Fakturační údaje (volitelné)</h2>
             <label style="display:flex;align-items:center;gap:10px;margin-bottom:16px;cursor:pointer;font-size:14px;color:var(--muted)">
@@ -3107,7 +3108,7 @@ function viewCheckout(){
             </div>
 
             <h2><span class="num">4</span>Doprava</h2>
-            <label class="option selected" data-ship="zasilkovna" data-price="${shipDefault}"><input type="radio" name="ship" checked onchange="toggleZasilkovna()"><div class="option-text"><strong>Zásilkovna</strong><span>Pobočka dle výběru · 1–2 pracovní dny</span></div><div class="option-price">${shipDefault===0?'Zdarma':formatPrice(shipBase)+' Kč'}</div></label>
+            <label class="option selected" id="zasilkovnaOption" data-ship="zasilkovna" data-price="${shipDefault}"><input type="radio" name="ship" checked onchange="toggleZasilkovna()"><div class="option-text"><strong>Zásilkovna</strong><span>Pobočka dle výběru · 1–2 pracovní dny</span></div><div class="option-price" id="zasilkovnaOptionPrice">${shipDefault===0?'Zdarma':formatPrice(shipBase)+' Kč'}</div></label>
             <div id="zasilkovnaPicker" style="margin:-6px 0 10px 0;padding:14px 16px;background:rgba(0,138,63,0.05);border:1px solid rgba(0,138,63,0.2)">
               <label style="display:block;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green-glow);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px">📍 Vyber pobočku Zásilkovny</label>
               <div id="packetaBranchSelected" style="display:none;margin-bottom:10px;padding:10px 12px;background:rgba(0,138,63,0.1);border:1px solid rgba(0,200,83,0.35);align-items:center;gap:10px">
@@ -3121,7 +3122,7 @@ function viewCheckout(){
               <button type="button" class="btn btn-outline btn-sm" id="packetaPickBtn" onclick="openPacketaWidgetCheckout()" style="gap:8px">
                 🗺️ Zvolit pobočku k vyzvednutí
               </button>
-              <div style="font-size:11px;color:var(--muted);margin-top:8px;font-family:'JetBrains Mono',monospace">Přes 8 000 poboček a Z-BOXů po celé ČR</div>
+              <div id="packetaHint" style="font-size:11px;color:var(--muted);margin-top:8px;font-family:'JetBrains Mono',monospace">Přes 8 000 poboček a Z-BOXů po celé ČR</div>
             </div>
             ${(()=>{const sc=getShippingConfig();return sc.pplEnabled?`<label class="option" data-ship="ppl" data-price="${subtotal>=freeOver?0:99}"><input type="radio" name="ship" onchange="toggleZasilkovna()"><div class="option-text"><strong>PPL k ruce</strong><span>1–2 dny · přímo na adresu</span></div><div class="option-price">${subtotal>=freeOver?'Zdarma':'99 Kč'}</div></label>`:''})()}
             ${(()=>{const sc=getShippingConfig();return sc.kuryrEnabled?`<label class="option" data-ship="kuryr" data-price="149"><input type="radio" name="ship" onchange="toggleZasilkovna()"><div class="option-text"><strong>Kurýr (Praha)</strong><span>Dnes do 3 h</span></div><div class="option-price">149 Kč</div></label>`:''})()}
@@ -3171,6 +3172,7 @@ function viewCheckout(){
 // ===== PACKETA STATE =====
 let _packetaPointId='';
 let _packetaPointName='';
+let _packetaCountry='cz'; // aktuální země doručení pro Packeta widget
 
 window.toggleZasilkovna=function(){
   const picker=document.getElementById('zasilkovnaPicker');
@@ -3187,6 +3189,54 @@ function _packetaResetUI(){
   if(sel)sel.style.display='none';
   if(btn)btn.textContent='🗺️ Zvolit pobočku k vyzvednutí';
 }
+
+// Reaguje na změnu země doručení — aktualizuje Packeta widget, cenu a hint
+window.onDeliveryCountryChange=function(){
+  const country=document.getElementById('country')?.value||'cz';
+  const prevCountry=_packetaCountry;
+  _packetaCountry=country;
+
+  // Reset výběru pobočky pokud zákazník změnil zemi (CZ pobočka ≠ SK pobočka)
+  if(prevCountry!==country&&_packetaPointId){
+    _packetaPointId='';
+    _packetaPointName='';
+    _packetaResetUI();
+    showToast('🇸🇰 Vyber pobočku Zásilkovny na Slovensku','');
+  }
+
+  // Přepočítat cenu Zásilkovny
+  const s=getSettings();
+  const subtotal=cartTotal();
+  const freeOver=s.freeShippingOver||1500;
+  const basePriceCZ=s.shippingPrice||79;
+  const basePriceSK=s.shippingPriceSK!=null?s.shippingPriceSK:basePriceCZ;
+  const basePrice=country==='sk'?basePriceSK:basePriceCZ;
+  const price=subtotal>=freeOver?0:basePrice;
+
+  // Aktualizovat option label
+  const opt=document.getElementById('zasilkovnaOption');
+  if(opt){
+    opt.dataset.price=price;
+    const priceEl=document.getElementById('zasilkovnaOptionPrice');
+    if(priceEl)priceEl.textContent=price===0?'Zdarma':formatPrice(price)+' Kč';
+  }
+
+  // Aktualizovat celkový součet pokud je Zásilkovna vybraná
+  const isZasSelected=document.querySelector('.option[data-ship="zasilkovna"]')?.classList.contains('selected');
+  if(isZasSelected){
+    const cod=document.querySelector('.option[data-pay="cod"]')?.classList.contains('selected')?39:0;
+    const ap=getAppliedPromo();
+    const disc=calcDiscount(ap,subtotal);
+    const shipEl=document.getElementById('sumShip');
+    const totEl=document.getElementById('sumTotal');
+    if(shipEl)shipEl.textContent=price===0?'Zdarma':formatPrice(price)+' Kč';
+    if(totEl)totEl.textContent=formatPrice(Math.max(0,subtotal-disc)+price+cod)+' Kč';
+  }
+
+  // Aktualizovat hint text
+  const hint=document.getElementById('packetaHint');
+  if(hint)hint.textContent=country==='sk'?'Přes 2 200 poboček po celém Slovensku':'Přes 8 000 poboček a Z-BOXů po celé ČR';
+};
 
 window.openPacketaWidgetCheckout=function(){
   const config=getShippingConfig();
@@ -3206,7 +3256,7 @@ window.openPacketaWidgetCheckout=function(){
         if(selEl){selEl.style.display='flex';}
         if(btn)btn.textContent='🔄 Změnit pobočku';
         showToast('✅ Pobočka zvolena: '+point.name);
-      },{country:config.defaultCountry||'cz',language:'cs'});
+      },{country:_packetaCountry||'cz',language:'cs'});
     }catch(e){showToast('❌ Chyba widgetu: '+e.message,'error');}
   };
   if(typeof Packeta==='undefined'){
@@ -6703,12 +6753,17 @@ function viewShopSettings(){
           <div style="padding:24px" class="settings-group">
             <div class="settings-grid">
               <div>
-                <label>Základní cena dopravy (Kč)</label>
+                <label>Základní cena dopravy CZ (Kč)</label>
                 <input type="number" id="set_shippingPrice" value="${s.shippingPrice}" min="0">
               </div>
               <div>
                 <label>Doprava zdarma od (Kč)</label>
                 <input type="number" id="set_freeShippingOver" value="${s.freeShippingOver}" min="0">
+              </div>
+              <div>
+                <label>Zásilkovna SK — cena (Kč)</label>
+                <input type="number" id="set_shippingPriceSK" value="${s.shippingPriceSK!=null?s.shippingPriceSK:''}" min="0" placeholder="prázdné = stejná jako CZ">
+                <div style="font-size:11px;color:#888;margin-top:4px">Pokud prázdné, použije se CZ cena (${s.shippingPrice} Kč)</div>
               </div>
             </div>
           </div>
@@ -6755,6 +6810,8 @@ window.saveShopSettings=function(){
   s.bankName=document.getElementById('set_bankName').value.trim();
   s.shippingPrice=Number(document.getElementById('set_shippingPrice').value)||0;
   s.freeShippingOver=Number(document.getElementById('set_freeShippingOver').value)||0;
+  const skVal=document.getElementById('set_shippingPriceSK').value;
+  s.shippingPriceSK=skVal!==''?Number(skVal):null;
   setSettings(s);
   showToast('✅ Nastavení uloženo');
 }
