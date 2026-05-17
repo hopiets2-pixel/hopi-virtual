@@ -6525,11 +6525,12 @@ window.testSnipcartConnection=async function(){
 // ============== SHIPPING (ZÁSILKOVNA) SETTINGS ==============
 function getShippingConfig(){
   const def={provider:'none',packetaApiKey:'',packetaEnabled:false,defaultCountry:'cz',pplEnabled:false,kuryrEnabled:false};
-  const saved=JSON.parse(localStorage.getItem('hopi_shipping_config')||'{}');
-  return Object.assign({},def,saved);
+  const saved=getAppSetting('shipping_config',{});
+  const parsed=(typeof saved==='string')?JSON.parse(saved):(saved||{});
+  return Object.assign({},def,parsed);
 }
-function setShippingConfig(c){
-  localStorage.setItem('hopi_shipping_config',JSON.stringify(c));
+async function setShippingConfig(c){
+  await saveAppSetting('shipping_config',c);
 }
 
 function viewShippingSettings(){
@@ -6641,22 +6642,22 @@ function viewShippingSettings(){
   `;
 }
 
-window.saveShippingConfig=function(){
+window.saveShippingConfig=async function(){
   const config=getShippingConfig();
   config.provider='packeta';
   config.packetaApiKey=document.getElementById('packetaApiKey').value.trim();
   config.packetaEnabled=document.getElementById('packetaEnabled').checked;
   config.defaultCountry=document.getElementById('packetaCountry').value;
-  setShippingConfig(config);
+  await setShippingConfig(config);
   showToast('💾 Nastavení uloženo');
   setTimeout(()=>viewAdmin(),300);
 }
 
-window.saveShippingCarriers=function(){
+window.saveShippingCarriers=async function(){
   const config=getShippingConfig();
   config.pplEnabled=document.getElementById('pplEnabled').checked;
   config.kuryrEnabled=document.getElementById('kuryrEnabled').checked;
-  setShippingConfig(config);
+  await setShippingConfig(config);
   showToast('💾 Dopravci uloženi');
   setTimeout(()=>viewAdmin(),300);
 }
