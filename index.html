@@ -1720,6 +1720,24 @@ async function sendStatusEmail(order,newStatus,options={}){
   return {ok:logEntry.success,reason:logEntry.success?'sent':logEntry.error,logEntry};
 }
 
+// === iDoklad: odeslání faktury emailem zákazníkovi přes novou Edge Function ===
+async function sendInvoiceEmailToCustomer(invoiceId,invoiceNumber,customerEmail,customerName,orderId){
+  try{
+    const {data,error}=await supabaseClient.functions.invoke('idoklad-send-invoice-email',{
+      body:{invoiceId,invoiceNumber,customerEmail,customerName,orderId}
+    });
+    if(error||!data?.success){
+      console.warn('Invoice email failed:',error||data?.error);
+      return false;
+    }
+    console.log('Invoice email sent OK to',customerEmail,'invoiceId:',invoiceId);
+    return true;
+  }catch(e){
+    console.warn('sendInvoiceEmailToCustomer exception:',e);
+    return false;
+  }
+}
+
 async function advanceOrderStatus(orderId){
   const orders=getOrders();
   const o=orders.find(x=>x.id===orderId);
@@ -1732,34 +1750,71 @@ async function advanceOrderStatus(orderId){
   setOrders(orders);
   // Update v Google Sheets
   updateOrderInSheets(orderId,{status:s.next,statusHistory:o.statusHistory}).catch(()=>{});
-  // Auto faktura při odeslání
-  const invConfig=getInvoiceConfig();
-  if(s.next==='shipped'&&invConfig.enabled&&invConfig.autoIssue&&!o.invoiceId){
-    setTimeout(()=>{
-      try{issueInvoice(orderId);showToast('📄 Faktura automaticky vystavena')}catch(e){}
-    },500);
-  }
-  // Vytvořit zásilku v Packeta při odeslání — ČEKAT než přijde tracking číslo, pak poslat email
-  if(s.next==='shipped' && o.ship==='zasilkovna' && o.packeta_point_id){
-    try{
-      await createPacketaShipment(o);
-      // Znovu načíst objednávku z localStorage — má teď tracking číslo
-      const freshOrders=getOrders();
-      const freshO=freshOrders.find(x=>x.id===orderId)||o;
-      sendStatusEmail(freshO,s.next).then(r=>{
-        if(r.ok)showToast('📧 E-mail zákazníkovi odeslán (sledovací číslo v emailu)');
-        else if(r.reason&&r.reason!=='already_sent'&&r.reason!=='disabled_for_status'&&r.reason!=='no_email'){
-          showToast('⚠️ E-mail se nepodařilo odeslat','error');
-        }
-      });
-    }catch(e){
-      console.warn('Packeta error při odeslání:',e);
-      // I přes chybu Packeta pošli email (bez tracking čísla)
-      sendStatusEmail(o,s.next).then(()=>{});
+
+  // === SHIPPED: faktura → email faktury → zásilka → shipping email ===
+  if(s.next==='shipped'){
+    const invConfig=getInvoiceConfig();
+
+    // 1. Auto-vystavení faktury — AWAIT (musí proběhnout před emailem faktury)
+    if(invConfig.enabled&&invConfig.autoIssue&&!o.invoiceId){
+      try{
+        await issueInvoice(orderId,{silent:true});
+        showToast('📄 Faktura automaticky vystavena');
+      }catch(e){console.warn('Auto-invoice error:',e);}
     }
+
+    // 2. Zaslání faktury emailem zákazníkovi přes iDoklad (pokud zapnuto)
+    if(invConfig.enabled&&invConfig.sendInvoiceEmail){
+      const freshForInv=getOrders().find(x=>x.id===orderId)||o;
+      if(freshForInv.invoiceId&&freshForInv.customer?.email){
+        try{
+          const ok=await sendInvoiceEmailToCustomer(
+            freshForInv.invoiceId,
+            freshForInv.invoiceNumber,
+            freshForInv.customer.email,
+            (freshForInv.customer.firstName||'')+' '+(freshForInv.customer.lastName||''),
+            freshForInv.id
+          );
+          if(ok)showToast('📧 Faktura zaslána zákazníkovi emailem');
+          else showToast('⚠️ Fakturu se nepodařilo odeslat emailem','error');
+        }catch(e){console.warn('Invoice email error:',e);}
+      }else if(!freshForInv.invoiceId){
+        console.warn('Invoice email skip — faktura ještě nemá ID (pravděpodobně autoIssue vypnuté)');
+      }
+    }
+
+    // 3. Zásilkovna: vytvořit zásilku, pak shipping email se sledovacím číslem
+    if(o.ship==='zasilkovna'&&o.packeta_point_id){
+      try{
+        await createPacketaShipment(o);
+        // Znovu načíst objednávku z localStorage — má teď tracking číslo
+        const freshOrders=getOrders();
+        const freshO=freshOrders.find(x=>x.id===orderId)||o;
+        sendStatusEmail(freshO,s.next).then(r=>{
+          if(r.ok)showToast('📧 E-mail zákazníkovi odeslán (sledovací číslo v emailu)');
+          else if(r.reason&&r.reason!=='already_sent'&&r.reason!=='disabled_for_status'&&r.reason!=='no_email'){
+            showToast('⚠️ E-mail se nepodařilo odeslat','error');
+          }
+        });
+      }catch(e){
+        console.warn('Packeta error při odeslání:',e);
+        // I přes chybu Packeta pošli email (bez tracking čísla)
+        sendStatusEmail(o,s.next).then(()=>{});
+      }
+      return;
+    }
+
+    // 4. Ostatní dopravy — shipping email hned
+    sendStatusEmail(o,s.next).then(r=>{
+      if(r.ok)showToast('📧 E-mail zákazníkovi odeslán');
+      else if(r.reason&&r.reason!=='already_sent'&&r.reason!=='disabled_for_status'&&r.reason!=='no_email'){
+        showToast('⚠️ E-mail se nepodařilo odeslat','error');
+      }
+    });
     return;
   }
-  // Pro ostatní dopravy — email hned
+
+  // === OSTATNÍ STAVY ===
   sendStatusEmail(o,s.next).then(r=>{
     if(r.ok)showToast('📧 E-mail zákazníkovi odeslán');
     else if(r.reason&&r.reason!=='already_sent'&&r.reason!=='disabled_for_status'&&r.reason!=='no_email'){
@@ -7290,7 +7345,7 @@ window.deleteComplaint=function(id){
 
 // ============== INVOICES (iDoklad) ==============
 function getInvoiceConfig(){
-  return JSON.parse(localStorage.getItem('hopi_invoice_config')||'{"provider":"idoklad","clientId":"","clientSecret":"","enabled":false,"autoIssue":false,"companyName":"HOPI VIRTUAL s.r.o.","companyIco":"","companyDic":"","companyAddress":""}');
+  return JSON.parse(localStorage.getItem('hopi_invoice_config')||'{"provider":"idoklad","clientId":"","clientSecret":"","enabled":false,"autoIssue":false,"sendInvoiceEmail":false,"companyName":"HOPI VIRTUAL s.r.o.","companyIco":"","companyDic":"","companyAddress":""}');
 }
 function setInvoiceConfig(c){localStorage.setItem('hopi_invoice_config',JSON.stringify(c))}
 function getInvoicesLog(){return JSON.parse(localStorage.getItem('hopi_invoices_log')||'[]')}
@@ -7354,6 +7409,14 @@ function viewInvoicesAdmin(){
               <div>
                 <strong style="display:block">🤖 Automaticky vystavit při odeslání</strong>
                 <span style="font-size:12px;color:var(--muted)">Jakmile objednávku posuneš do "Odesláno", faktura se vytvoří sama</span>
+              </div>
+            </label>
+
+            <label style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid #ddd;cursor:pointer;background:${config.sendInvoiceEmail?'rgba(0,138,63,0.05)':'#fff'}">
+              <input type="checkbox" id="inv_send_email" ${config.sendInvoiceEmail?'checked':''} style="accent-color:var(--green);width:20px;height:20px">
+              <div>
+                <strong style="display:block">📧 Zaslat fakturu emailem zákazníkovi</strong>
+                <span style="font-size:12px;color:var(--muted)">Při odeslání zásilky pošle iDoklad zákazníkovi email s PDF fakturou v příloze (vyžaduje zapnuté "Automaticky vystavit")</span>
               </div>
             </label>
           </div>
@@ -7466,6 +7529,7 @@ window.saveInvoiceConfig=function(){
   const c={
     enabled:document.getElementById('inv_enabled').checked,
     autoIssue:document.getElementById('inv_auto').checked,
+    sendInvoiceEmail:document.getElementById('inv_send_email').checked,
     clientId:document.getElementById('inv_clientId').value.trim(),
     clientSecret:document.getElementById('inv_clientSecret').value.trim(),
     companyName:document.getElementById('inv_companyName').value.trim(),
