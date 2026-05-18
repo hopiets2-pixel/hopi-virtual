@@ -6956,8 +6956,7 @@ function viewShopSettings(){
         <div class="panel-head"><h3>📧 Ecomail — Newsletter integrace</h3></div>
         <div style="padding:24px" class="settings-group">
           <div style="background:#0a1f12;border:1px solid var(--green);padding:14px 16px;margin-bottom:24px;font-size:13px;color:#ccc;line-height:1.7">
-            <strong style="color:var(--green-glow)">Jak funguje:</strong> Zákazník klikne „Být první →" → popup → e-mail jde do Ecomail přes Edge Function.<br>
-            1. Vlož API klíč → Uložit. &nbsp;2. Klikni Načíst seznamy → vyber → Uložit.
+            <strong style="color:var(--green-glow)">Jak funguje:</strong> Zákazník klikne „Být první →" → popup → e-mail + jméno jdou do Ecomail přes Edge Function <code style="background:#111;padding:1px 5px">ecomail-subscribe</code>.
           </div>
 
           <label>Ecomail API klíč</label>
@@ -6965,23 +6964,16 @@ function viewShopSettings(){
             <input type="password" id="ecmApiKey" value="${getAppSetting('ecomail_api_key','')}" placeholder="Vlož API klíč z Ecomail → Nastavení → API" style="flex:1;padding:10px 12px;background:#1a1a1a;border:1px solid #2a2a2a;color:#fff;font-family:'Archivo',sans-serif;font-size:13px">
             <button class="abtn" onclick="toggleEcmKeyVisibility()" id="ecmEyeBtn" style="white-space:nowrap">👁 Zobrazit</button>
           </div>
-          <div style="font-size:11px;color:#888;margin-bottom:18px">Kde najít: přihlas se na <strong style="color:#ccc">ecomail.cz</strong> → vpravo nahoře klikni na profil → Nastavení → API</div>
+          <div style="font-size:11px;color:#888;margin-bottom:20px">Ecomail → vpravo nahoře profil → Nastavení → API</div>
 
-          <label>Vybraný seznam</label>
-          <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
-            <select id="ecmListSelect" style="flex:1;padding:10px 12px;background:#1a1a1a;border:1px solid #2a2a2a;color:#fff;font-family:'Archivo',sans-serif;font-size:14px">
-              ${(()=>{
-                const saved = getAppSetting('ecomail_list_id','');
-                const savedName = getAppSetting('ecomail_list_name','');
-                if(saved) return '<option value="'+saved+'">'+( savedName || 'Seznam #'+saved )+' (aktuální)</option>';
-                return '<option value="">— nejdřív klikni Načíst seznamy —</option>';
-              })()}
-            </select>
-            <button class="abtn" id="ecmLoadBtn" onclick="loadEcomailLists()" style="white-space:nowrap">🔄 Načíst seznamy</button>
+          <label>List ID (číslo seznamu)</label>
+          <input type="text" id="ecmListId" value="${getAppSetting('ecomail_list_id','')}" placeholder="Např. 2  (najdeš v URL: ecomail.cz/app/lists/2)">
+          <div style="font-size:11px;color:#888;margin-top:4px;margin-bottom:20px">
+            Kde najít: Ecomail → Kontakty → Seznamy → klikni na seznam → číslo v URL
           </div>
-          <div id="ecmStatus" style="font-size:12px;color:#888;margin-bottom:18px;min-height:16px"></div>
 
           <button class="abtn abtn-primary" onclick="saveEcomailSettings()">💾 Uložit</button>
+          <div id="ecmStatus" style="font-size:12px;margin-top:12px;min-height:16px"></div>
         </div>
       </div>
 
@@ -7043,57 +7035,16 @@ window.toggleEcmKeyVisibility=function(){
   btn.textContent=inp.type==='password'?'👁 Zobrazit':'🙈 Skrýt';
 };
 
-window.loadEcomailLists=async function(){
-  const btn=document.getElementById('ecmLoadBtn');
-  const status=document.getElementById('ecmStatus');
-  const sel=document.getElementById('ecmListSelect');
-  const apiKeyEl=document.getElementById('ecmApiKey');
-  if(!btn||!status||!sel)return;
-  const apiKey=(apiKeyEl?apiKeyEl.value.trim():'')||getAppSetting('ecomail_api_key','');
-  if(!apiKey){
-    status.style.color='#e53935';
-    status.textContent='❌ Nejdřív vlož API klíč výše a ulož.';
-    return;
-  }
-  btn.disabled=true;
-  btn.textContent='⏳ Načítám...';
-  status.textContent='';
-  try{
-    const res=await fetch(SUPABASE_URL+'/functions/v1/ecomail-get-lists',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},
-      body:JSON.stringify({apiKey})
-    });
-    const data=await res.json();
-    if(!res.ok) throw new Error(data.error||'Chyba API');
-    const lists=data.lists||[];
-    if(!lists.length){status.textContent='⚠️ Žádné seznamy nenalezeny.';return;}
-    const savedId=getAppSetting('ecomail_list_id','');
-    sel.innerHTML=lists.map(l=>
-      '<option value="'+l.id+'"'+(String(l.id)===String(savedId)?' selected':'')+'>'+l.name+' (ID: '+l.id+')</option>'
-    ).join('');
-    status.style.color='var(--green-glow)';
-    status.textContent='✅ Načteno '+lists.length+' seznam'+(lists.length===1?'':'ů')+'. Vyber a ulož.';
-  }catch(err){
-    status.style.color='#e53935';
-    status.textContent='❌ Chyba: '+err.message+'. Zkontroluj API klíč.';
-  }finally{
-    btn.disabled=false;
-    btn.textContent='🔄 Načíst seznamy';
-  }
-};
-
 window.saveEcomailSettings=async function(){
   const apiKeyEl=document.getElementById('ecmApiKey');
-  const sel=document.getElementById('ecmListSelect');
+  const listIdEl=document.getElementById('ecmListId');
+  const status=document.getElementById('ecmStatus');
   const apiKey=apiKeyEl?apiKeyEl.value.trim():'';
+  const listId=listIdEl?listIdEl.value.trim():'';
+  if(!listId){showToast('⚠️ Vlož List ID (číslo seznamu)','error');return;}
   if(apiKey) await saveAppSetting('ecomail_api_key', apiKey);
-  if(sel&&sel.value){
-    const listId=sel.value;
-    const listName=sel.options[sel.selectedIndex]?sel.options[sel.selectedIndex].text:'';
-    await saveAppSetting('ecomail_list_id', listId);
-    await saveAppSetting('ecomail_list_name', listName);
-  }
+  await saveAppSetting('ecomail_list_id', listId);
+  if(status){status.style.color='var(--green-glow)';status.textContent='✅ Uloženo — API klíč a List ID jsou nastaveny.';}
   showToast('✅ Ecomail nastavení uloženo');
 };
 
