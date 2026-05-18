@@ -2773,6 +2773,10 @@ window.openNewsletterModal=function(){
       <div class="nl-modal-tag">● Drop 01 / Notifikace</div>
       <h2 id="nlModalTitle">Buď první<br>u nového dropu</h2>
       <p>Zadej e-mail a dostaneš upozornění jako první. Zero spam.</p>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input type="text" id="nlFirstName" placeholder="Jméno" autocomplete="given-name" style="flex:1;padding:14px 16px;background:#000;border:1px solid #2a2a2a;color:#fff;font-family:'Archivo',sans-serif;font-size:14px;outline:none">
+        <input type="text" id="nlLastName" placeholder="Příjmení" autocomplete="family-name" style="flex:1;padding:14px 16px;background:#000;border:1px solid #2a2a2a;color:#fff;font-family:'Archivo',sans-serif;font-size:14px;outline:none">
+      </div>
       <div class="nl-modal-field">
         <input type="email" id="nlEmailInput" placeholder="tvuj@email.cz" autocomplete="email">
         <button id="nlSubmitBtn" onclick="submitNewsletterModal()">Přihlásit →</button>
@@ -2811,12 +2815,13 @@ window.submitNewsletterModal=async function(){
       btn.disabled=false;btn.textContent='Přihlásit →';
       return;
     }
+    const firstName=(document.getElementById('nlFirstName')||{value:''}).value.trim();
+    const lastName=(document.getElementById('nlLastName')||{value:''}).value.trim();
     const res=await fetch(SUPABASE_URL+'/functions/v1/ecomail-subscribe',{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},
-      body:JSON.stringify({email, listId})
+      body:JSON.stringify({email, listId, firstName, lastName})
     });
-    // Zobrazit úspěch (včetně "already subscribed" → tichý upsert)
     const inner=document.getElementById('nlModalInner');
     if(inner){
       inner.innerHTML=`
@@ -2926,6 +2931,10 @@ function viewHome(){
             <div class="nl-modal-tag">● Drop 01 / Notifikace</div>
             <h2 id="nlModalTitle">Buď první<br>u nového dropu</h2>
             <p>Zadej e-mail a dostaneš upozornění jako první. Zero spam.</p>
+            <div style="display:flex;gap:8px;margin-bottom:8px">
+              <input type="text" id="nlFirstName" placeholder="Jméno" autocomplete="given-name" style="flex:1;padding:14px 16px;background:#000;border:1px solid #2a2a2a;color:#fff;font-family:'Archivo',sans-serif;font-size:14px;outline:none">
+              <input type="text" id="nlLastName" placeholder="Příjmení" autocomplete="family-name" style="flex:1;padding:14px 16px;background:#000;border:1px solid #2a2a2a;color:#fff;font-family:'Archivo',sans-serif;font-size:14px;outline:none">
+            </div>
             <div class="nl-modal-field">
               <input type="email" id="nlEmailInput" placeholder="tvuj@email.cz" autocomplete="email" onkeydown="if(event.key==='Enter')submitNewsletterModal()">
               <button id="nlSubmitBtn" onclick="submitNewsletterModal()">Přihlásit →</button>
@@ -7032,8 +7041,9 @@ window.loadEcomailLists=async function(){
   status.textContent='';
   try{
     const res=await fetch(SUPABASE_URL+'/functions/v1/ecomail-get-lists',{
-      method:'GET',
-      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},
+      body:JSON.stringify({})
     });
     const data=await res.json();
     if(!res.ok) throw new Error(data.error||'Chyba API');
