@@ -3794,7 +3794,7 @@ function viewSuccess(){
   // Platební box — pokud je platba převodem
   let paymentBox='';
   if(order.pay==='transfer'){
-    const bankAcc=s.bankAccount||'[ČÍSLO ÚČTU NENÍ NASTAVENO]';
+    const bankAcc=getAppSetting('bank_account',s.bankAccount)||'[ČÍSLO ÚČTU NENÍ NASTAVENO]';
     paymentBox=`
       <div style="background:linear-gradient(135deg,rgba(0,138,63,0.12),rgba(0,200,83,0.18));border:2px solid var(--green);padding:28px;margin:30px 0;text-align:left">
         <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green-glow);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:12px">💰 Platební údaje</div>
@@ -3813,10 +3813,10 @@ function viewSuccess(){
             <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase">Částka</div>
             <div style="font-family:'Archivo Black',sans-serif;font-size:22px;color:var(--green-glow)">${formatPrice(order.total)} Kč</div>
           </div>
-          ${s.iban?`
+          ${(getAppSetting('bank_iban',s.iban))?`
             <div style="display:grid;grid-template-columns:130px 1fr;gap:12px;align-items:center;padding:12px 16px;background:rgba(0,0,0,0.25);border-left:3px solid #444">
               <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase">IBAN</div>
-              <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:#ddd;word-break:break-all">${escapeHtml(s.iban)}</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:#ddd;word-break:break-all">${escapeHtml(getAppSetting('bank_iban',s.iban))}</div>
             </div>
           `:''}
         </div>
@@ -6842,12 +6842,16 @@ function viewShopSettings(){
   `;
 }
 
-window.saveBankingFromFinance=function(){
+window.saveBankingFromFinance=async function(){
   const s=getSettings();
   s.bankAccount=document.getElementById('fin_bankAccount').value.trim();
   s.iban=document.getElementById('fin_iban').value.trim();
   s.bankName=document.getElementById('fin_bankName').value.trim();
   setSettings(s);
+  // ⭐ Uložit i do Supabase — přístupné zákazníkům na všech zařízeních
+  await saveAppSetting('bank_account', s.bankAccount);
+  await saveAppSetting('bank_iban', s.iban);
+  await saveAppSetting('bank_name', s.bankName);
   if(s.bankAccount){
     showToast('✅ Platební údaje uloženy — zákazníci je uvidí v e-mailu a na potvrzovací stránce');
   }else{
@@ -6856,7 +6860,7 @@ window.saveBankingFromFinance=function(){
   viewAdmin();
 }
 
-window.saveShopSettings=function(){
+window.saveShopSettings=async function(){
   const s=getSettings();
   s.shopName=document.getElementById('set_shopName').value;
   s.email=document.getElementById('set_email').value;
@@ -6869,6 +6873,10 @@ window.saveShopSettings=function(){
   const skVal=document.getElementById('set_shippingPriceSK').value;
   s.shippingPriceSK=skVal!==''?Number(skVal):null;
   setSettings(s);
+  // ⭐ Uložit i do Supabase — přístupné zákazníkům na všech zařízeních
+  await saveAppSetting("bank_account", s.bankAccount);
+  await saveAppSetting("bank_iban", s.iban);
+  await saveAppSetting("bank_name", s.bankName);
   showToast('✅ Nastavení uloženo');
 }
 
