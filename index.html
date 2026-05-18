@@ -1602,7 +1602,7 @@ function buildEmailHTML(order,template){
         <!-- CTA -->
         <tr>
           <td style="padding:0 24px 28px 24px;text-align:center">
-            <a href="#" style="display:inline-block;background:#008a3f;color:#fff;padding:14px 28px;text-decoration:none;font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:1px">Zobrazit objednávku</a>
+            <a href="${window.location.origin}/#track?order=${encodeURIComponent(order.id)}" style="display:inline-block;background:#008a3f;color:#fff;padding:14px 28px;text-decoration:none;font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:1px">Zobrazit objednávku</a>
           </td>
         </tr>
 
@@ -3542,11 +3542,11 @@ function renderPaymentOptions(){
     return `<div style="padding:14px;background:rgba(229,57,53,0.08);border-left:3px solid var(--red);color:#ff8a80;font-size:13px">⚠️ Nejsou nakonfigurované žádné platební metody. Otevři <strong>Admin → Platby</strong>.</div>`;
   }
   // --- Ikonky platebních metod (CDN + inline SVG, žádné base64) ---
-  const _iVisa = `<img src="https://cdn.simpleicons.org/visa/ffffff" alt="Visa" height="14" style="display:block;opacity:.85">`;
-  const _iMC   = `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="19" viewBox="0 0 30 19" aria-label="Mastercard" role="img"><rect width="30" height="19" rx="3" fill="#1c1c1c"/><circle cx="11" cy="9.5" r="6.5" fill="#EB001B"/><circle cx="19" cy="9.5" r="6.5" fill="#F79E1B"/><path d="M15 4.05a6.5 6.5 0 0 1 0 10.9A6.5 6.5 0 0 1 15 4.05z" fill="#FF5F00"/></svg>`;
-  const _iAP   = `<img src="https://cdn.simpleicons.org/applepay/ffffff" alt="Apple Pay" height="18" style="display:block;opacity:.85">`;
-  const _iGP   = `<img src="https://cdn.simpleicons.org/googlepay/ffffff" alt="Google Pay" height="18" style="display:block;opacity:.8">`;
-  const _iBank = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 22h18"/><path d="M4 11v9M8 11v9M12 11v9M16 11v9M20 11v9"/><path d="M2 11l10-8 10 8H2z"/></svg>`;
+  const _iVisa = `<img src="https://cdn.simpleicons.org/visa/ffffff" alt="Visa" height="28" style="display:block;opacity:.85">`;
+  const _iMC   = `<svg xmlns="http://www.w3.org/2000/svg" width="52" height="33" viewBox="0 0 30 19" aria-label="Mastercard" role="img"><rect width="30" height="19" rx="3" fill="#1c1c1c"/><circle cx="11" cy="9.5" r="6.5" fill="#EB001B"/><circle cx="19" cy="9.5" r="6.5" fill="#F79E1B"/><path d="M15 4.05a6.5 6.5 0 0 1 0 10.9A6.5 6.5 0 0 1 15 4.05z" fill="#FF5F00"/></svg>`;
+  const _iAP   = `<img src="https://cdn.simpleicons.org/applepay/ffffff" alt="Apple Pay" height="32" style="display:block;opacity:.85">`;
+  const _iGP   = `<img src="https://cdn.simpleicons.org/googlepay/ffffff" alt="Google Pay" height="32" style="display:block;opacity:.8">`;
+  const _iBank = `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 22h18"/><path d="M4 11v9M8 11v9M12 11v9M16 11v9M20 11v9"/><path d="M2 11l10-8 10 8H2z"/></svg>`;
   const PAY_ICONS = {
     card:      `<span style="display:inline-flex;align-items:center;gap:4px">${_iVisa}${_iMC}</span>`,
     applepay:  _iAP,
@@ -3890,6 +3890,8 @@ function viewPaymentCancelled(){
 }
 
 function viewTrack(){
+  const {params}=getRoute();
+  const prefilledOrder=params.order||'';
   document.getElementById('app').innerHTML=`
     ${renderNavbar()}
     <main class="page page-tight">
@@ -3901,7 +3903,7 @@ function viewTrack(){
         <form onsubmit="event.preventDefault();doTrack()">
           <div class="form-group">
             <label class="form-label">Číslo objednávky</label>
-            <input type="text" class="form-input" id="trackId" required placeholder="HV-123456" autocomplete="off" style="font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;text-transform:uppercase">
+            <input type="text" class="form-input" id="trackId" required placeholder="HV-123456" autocomplete="off" style="font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;text-transform:uppercase" value="${escapeHtml(prefilledOrder)}">
             <div class="form-hint">Najdeš ho v e-mailu s potvrzením objednávky</div>
           </div>
           <div class="form-group">
@@ -3919,23 +3921,55 @@ function viewTrack(){
   `;
 }
 
-window.doTrack=function(){
+window.doTrack=async function(){
   const id=document.getElementById('trackId').value.trim().toUpperCase();
   const email=document.getElementById('trackEmail').value.trim().toLowerCase();
+  if(!id||!email){showToast('❌ Vyplň číslo objednávky i e-mail.','error');return;}
+  // Nejprve zkus localStorage
   const orders=getOrders();
-  const o=orders.find(x=>x.id.toUpperCase()===id&&(x.customer.email||'').toLowerCase()===email);
-  if(!o){
-    showToast('❌ Objednávka nenalezena. Zkontroluj číslo a e-mail.','error');
-    return;
+  const localO=orders.find(x=>x.id.toUpperCase()===id&&(x.customer.email||'').toLowerCase()===email);
+  if(localO){go('trackOrder?id='+encodeURIComponent(id)+'&email='+encodeURIComponent(email));return;}
+  // Fallback: Supabase (pro zákazníky na jiném zařízení)
+  const btn=document.querySelector('button[type="submit"]');
+  if(btn){btn.textContent='Hledám...';btn.disabled=true;}
+  try{
+    const {data,error}=await supabaseClient
+      .from('orders')
+      .select('data')
+      .eq('id',id)
+      .eq('customer_email',email)
+      .maybeSingle();
+    if(btn){btn.innerHTML='Zobrazit objednávku <span class="arrow">→</span>';btn.disabled=false;}
+    if(error||!data){showToast('❌ Objednávka nenalezena. Zkontroluj číslo a e-mail.','error');return;}
+    // Dočasně ulož do localStorage, aby viewTrackOrder fungoval
+    const fullOrder=data.data||data;
+    const ords=getOrders();
+    if(!ords.find(x=>x.id===fullOrder.id)){ords.push(fullOrder);localStorage.setItem('hopi_orders',JSON.stringify(ords));}
+    go('trackOrder?id='+encodeURIComponent(id)+'&email='+encodeURIComponent(email));
+  }catch(e){
+    if(btn){btn.innerHTML='Zobrazit objednávku <span class="arrow">→</span>';btn.disabled=false;}
+    showToast('❌ Chyba při hledání objednávky.','error');
   }
-  go('trackOrder?id='+encodeURIComponent(id)+'&email='+encodeURIComponent(email));
 }
 
 function viewTrackOrder({id,email}={}){
   const orders=getOrders();
   const o=orders.find(x=>x.id.toUpperCase()===(id||'').toUpperCase()&&(x.customer.email||'').toLowerCase()===(email||'').toLowerCase());
   if(!o){
-    document.getElementById('app').innerHTML=`${renderNavbar()}<main class="page"><div class="empty"><h3>Objednávka nenalezena</h3><a class="btn btn-primary" onclick="go('track')">Zkusit znovu</a></div></main>${renderFooter()}`;
+    // Nejdřív ukážeme loading, pak zkusíme Supabase
+    document.getElementById('app').innerHTML=`${renderNavbar()}<main class="page"><div class="empty"><p style="color:var(--muted)">⏳ Načítám objednávku...</p></div></main>${renderFooter()}`;
+    supabaseClient.from('orders').select('data').eq('id',(id||'').toUpperCase()).eq('customer_email',(email||'').toLowerCase()).maybeSingle().then(({data,error})=>{
+      if(error||!data){
+        document.getElementById('app').innerHTML=`${renderNavbar()}<main class="page"><div class="empty"><h3>Objednávka nenalezena</h3><p style="color:var(--muted);margin:12px 0">Zkontroluj číslo objednávky a e-mail.</p><a class="btn btn-primary" onclick="go('track')">Zkusit znovu</a></div></main>${renderFooter()}`;
+        return;
+      }
+      const fullOrder=data.data||data;
+      const ords=getOrders();
+      if(!ords.find(x=>x.id===fullOrder.id)){ords.push(fullOrder);localStorage.setItem('hopi_orders',JSON.stringify(ords));}
+      viewTrackOrder({id,email});
+    }).catch(()=>{
+      document.getElementById('app').innerHTML=`${renderNavbar()}<main class="page"><div class="empty"><h3>Objednávka nenalezena</h3><a class="btn btn-primary" onclick="go('track')">Zkusit znovu</a></div></main>${renderFooter()}`;
+    });
     return;
   }
   const products=getProducts();
