@@ -217,6 +217,30 @@ h2.section-title{font-family:'Archivo Black',sans-serif;font-size:clamp(40px,5vw
 .newsletter-form button{padding:0 32px;background:#000;color:#fff;font-family:'Archivo',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;border:1px solid #000;cursor:pointer}
 .newsletter-form button:hover{background:#fff;color:var(--green)}
 
+/* === NEWSLETTER MODAL (Ecomail subscribe popup) === */
+.nl-modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:9000;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px)}
+.nl-modal-backdrop.show{display:flex}
+.nl-modal{background:#111;border:1px solid var(--green);max-width:480px;width:100%;padding:0;position:relative;animation:nlFadeIn .22s ease}
+@keyframes nlFadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.nl-modal-close{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;padding:4px;z-index:2}
+.nl-modal-close:hover{color:#fff}
+.nl-modal-body{padding:44px 36px 36px}
+.nl-modal-tag{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;color:var(--green-glow);text-transform:uppercase;margin-bottom:14px}
+.nl-modal h2{font-family:'Archivo Black',sans-serif;font-size:clamp(22px,4vw,30px);text-transform:uppercase;line-height:1;margin-bottom:10px;color:#fff}
+.nl-modal p{color:var(--muted);font-size:14px;margin-bottom:24px;line-height:1.6}
+.nl-modal-field{display:flex;gap:0;border:1px solid #2a2a2a}
+.nl-modal-field input[type=email]{flex:1;padding:14px 16px;background:#000;border:none;color:#fff;font-family:'Archivo',sans-serif;font-size:14px;outline:none}
+.nl-modal-field input[type=email]::placeholder{color:var(--muted)}
+.nl-modal-field input[type=email]:focus{border-color:var(--green)}
+.nl-modal-field button{padding:0 22px;background:var(--green);color:#fff;font-family:'Archivo Black',sans-serif;font-size:13px;text-transform:uppercase;border:none;cursor:pointer;white-space:nowrap;transition:background .2s}
+.nl-modal-field button:hover{background:var(--green-glow);color:#000}
+.nl-modal-field button:disabled{opacity:.5;cursor:not-allowed}
+.nl-modal-success{text-align:center;padding:48px 36px}
+.nl-modal-success .nl-check{font-size:40px;margin-bottom:14px}
+.nl-modal-success h3{font-family:'Archivo Black',sans-serif;font-size:22px;text-transform:uppercase;color:var(--green-glow);margin-bottom:10px}
+.nl-modal-success p{color:var(--muted);font-size:14px}
+@media(max-width:480px){.nl-modal-body{padding:36px 20px 28px}.nl-modal-field{flex-direction:column}.nl-modal-field button{padding:14px}}
+
 .faq{padding:120px 40px;max-width:900px;margin:0 auto}
 .faq-item{border-bottom:1px solid var(--border);padding:24px 0;cursor:pointer}
 .faq-q{display:flex;justify-content:space-between;align-items:center;font-family:'Archivo Black',sans-serif;font-size:18px;text-transform:uppercase}
@@ -2739,6 +2763,77 @@ function renderProductCard(p){
   `;
 }
 
+// ============== NEWSLETTER MODAL (Ecomail) ==============
+window.openNewsletterModal=function(){
+  const m=document.getElementById('nlModal');
+  if(!m)return;
+  const inner=document.getElementById('nlModalInner');
+  inner.innerHTML=`
+    <div class="nl-modal-body">
+      <div class="nl-modal-tag">● Drop 01 / Notifikace</div>
+      <h2 id="nlModalTitle">Buď první<br>u nového dropu</h2>
+      <p>Zadej e-mail a dostaneš upozornění jako první. Zero spam.</p>
+      <div class="nl-modal-field">
+        <input type="email" id="nlEmailInput" placeholder="tvuj@email.cz" autocomplete="email">
+        <button id="nlSubmitBtn" onclick="submitNewsletterModal()">Přihlásit →</button>
+      </div>
+    </div>`;
+  m.classList.add('show');
+  setTimeout(()=>{
+    const el=document.getElementById('nlEmailInput');
+    if(el){
+      el.focus();
+      el.addEventListener('keydown',function(e){if(e.key==='Enter')submitNewsletterModal();});
+    }
+  },80);
+};
+
+window.closeNewsletterModal=function(){
+  const m=document.getElementById('nlModal');
+  if(m)m.classList.remove('show');
+};
+
+document.addEventListener('keydown',function(e){if(e.key==='Escape')window.closeNewsletterModal();});
+
+window.submitNewsletterModal=async function(){
+  const emailEl=document.getElementById('nlEmailInput');
+  const btn=document.getElementById('nlSubmitBtn');
+  if(!emailEl||!btn)return;
+  const email=emailEl.value.trim();
+  if(!email||!email.includes('@')){emailEl.style.outline='2px solid #e53935';emailEl.focus();return;}
+  emailEl.style.outline='';
+  btn.disabled=true;
+  btn.textContent='Odesílám...';
+  try{
+    const listId=getAppSetting('ecomail_list_id','');
+    if(!listId){
+      showToast('⚠️ Nejprve nastav Ecomail List ID v Admin → Nastavení shopu.','error');
+      btn.disabled=false;btn.textContent='Přihlásit →';
+      return;
+    }
+    const res=await fetch(SUPABASE_URL+'/functions/v1/ecomail-subscribe',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},
+      body:JSON.stringify({email, listId})
+    });
+    // Zobrazit úspěch (včetně "already subscribed" → tichý upsert)
+    const inner=document.getElementById('nlModalInner');
+    if(inner){
+      inner.innerHTML=`
+        <div class="nl-modal-success">
+          <div class="nl-check">✅</div>
+          <h3>Hotovo!</h3>
+          <p>Dáme ti vědět jako prvním.<br>Zkontroluj i složku Hromadné / Spam.</p>
+        </div>`;
+    }
+    setTimeout(()=>window.closeNewsletterModal(),4500);
+  }catch(err){
+    btn.disabled=false;
+    btn.textContent='Přihlásit →';
+    showToast('❌ Chyba připojení, zkus to znovu.','error');
+  }
+};
+
 // ============== VIEWS ==============
 function viewHome(){
   const products=getProducts();
@@ -2803,7 +2898,7 @@ function viewHome(){
       <div class="big-cta-inner">
         <h2>${escapeHtml(s.ctaHeadline)}</h2>
         <p>${escapeHtml(s.ctaSub)}</p>
-        <a class="btn btn-primary" onclick="document.getElementById('newsletter').scrollIntoView({behavior:'smooth'})">Být první <span class="arrow">→</span></a>
+        <a class="btn btn-primary" onclick="openNewsletterModal()">Být první <span class="arrow">→</span></a>
       </div>
     </section>
 
@@ -2821,9 +2916,24 @@ function viewHome(){
     </section>
 
     ${renderFooter()}
-  `;
 
-  document.querySelectorAll('.filter').forEach(f=>{
+    <!-- === NEWSLETTER MODAL === -->
+    <div class="nl-modal-backdrop" id="nlModal" onclick="if(event.target===this)closeNewsletterModal()">
+      <div class="nl-modal" role="dialog" aria-modal="true" aria-labelledby="nlModalTitle">
+        <button class="nl-modal-close" onclick="closeNewsletterModal()" aria-label="Zavřít">×</button>
+        <div id="nlModalInner">
+          <div class="nl-modal-body">
+            <div class="nl-modal-tag">● Drop 01 / Notifikace</div>
+            <h2 id="nlModalTitle">Buď první<br>u nového dropu</h2>
+            <p>Zadej e-mail a dostaneš upozornění jako první. Zero spam.</p>
+            <div class="nl-modal-field">
+              <input type="email" id="nlEmailInput" placeholder="tvuj@email.cz" autocomplete="email" onkeydown="if(event.key==='Enter')submitNewsletterModal()">
+              <button id="nlSubmitBtn" onclick="submitNewsletterModal()">Přihlásit →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     f.addEventListener('click',()=>{
       document.querySelectorAll('.filter').forEach(x=>x.classList.remove('active'));
       f.classList.add('active');
@@ -6831,6 +6941,26 @@ function viewShopSettings(){
       </form>
 
       <div class="panel" style="margin-top:30px">
+        <div class="panel-head"><h3>📧 Ecomail — Newsletter integrace</h3></div>
+        <div style="padding:24px" class="settings-group">
+          <div style="background:#0a1f12;border:1px solid var(--green);padding:14px 16px;margin-bottom:20px;font-size:13px;color:#ccc;line-height:1.7">
+            <strong style="color:var(--green-glow)">Jak funguje:</strong> Zákazník klikne „Být první →" → zobrazí se popup → e-mail se odešle do Ecomail přes Supabase Edge Function <code style="background:#111;padding:1px 5px">ecomail-subscribe</code>.<br>
+            <strong style="color:#ffd54f">API klíč</strong> se nastavuje jako Supabase Secret (nikdy ve frontendu). <strong style="color:#ffd54f">List ID</strong> se ukládá sem.
+          </div>
+          <label>Ecomail List ID</label>
+          <input type="text" id="set_ecmListId" value="${getAppSetting('ecomail_list_id','')}" placeholder="Např. 12345 (zjistíš v Ecomail → Seznamy)">
+          <div style="font-size:12px;color:#888;margin-top:6px;margin-bottom:18px">
+            Jak najít List ID: přihlás se na <strong>ecomail.cz</strong> → Seznamy → klikni na svůj seznam → číslo v URL: <em>ecomail.cz/app/lists/<strong>12345</strong></em>
+          </div>
+          <button class="abtn abtn-primary" onclick="saveEcomailSettings()">💾 Uložit List ID</button>
+          <div style="margin-top:20px;padding:14px;background:#1a1a1a;border:1px solid #2a2a2a;font-size:12px;color:#888;line-height:1.8">
+            <strong style="color:#ccc">API klíč</strong> se nastavuje jako Supabase Secret (bezpečně):<br>
+            Supabase Dashboard → Edge Functions → Secrets → přidat <code style="background:#111;padding:1px 5px">ECOMAIL_API_KEY</code> = tvůj klíč z Ecomail → Settings → API
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:30px">
         <div class="panel-head"><h3>⚠️ Nebezpečná zóna</h3></div>
         <div style="padding:24px">
           <p style="color:var(--muted);font-size:13px;margin-bottom:14px">Tyto akce jsou nevratné.</p>
@@ -6879,6 +7009,12 @@ window.saveShopSettings=async function(){
   await saveAppSetting("bank_name", s.bankName);
   showToast('✅ Nastavení uloženo');
 }
+
+window.saveEcomailSettings=async function(){
+  const listId=document.getElementById('set_ecmListId').value.trim();
+  await saveAppSetting('ecomail_list_id', listId);
+  showToast('✅ Ecomail List ID uloženo');
+};
 
 function viewStats(){
   const orders=getOrders();
