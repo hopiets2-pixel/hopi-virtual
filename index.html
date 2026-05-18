@@ -1416,16 +1416,19 @@ Tým {nazev_shopu}`,
 };
 
 function getEmailTemplates(){
-  const s=localStorage.getItem('hopi_email_templates');
-  if(!s){localStorage.setItem('hopi_email_templates',JSON.stringify(DEFAULT_EMAIL_TEMPLATES));return {...DEFAULT_EMAIL_TEMPLATES}}
-  return {...DEFAULT_EMAIL_TEMPLATES,...JSON.parse(s)};
+  const saved=getAppSetting('email_templates',{});
+  const parsed=(typeof saved==='string')?JSON.parse(saved):(saved||{});
+  return Object.assign({},DEFAULT_EMAIL_TEMPLATES,parsed);
 }
-function setEmailTemplates(t){localStorage.setItem('hopi_email_templates',JSON.stringify(t))}
+async function setEmailTemplates(t){await saveAppSetting('email_templates',t)}
 
+const DEFAULT_EMAIL_CONFIG={mode:'demo',emailjsServiceId:'',emailjsTemplateId:'',emailjsPublicKey:'',fromName:'HOPI VIRTUAL',fromEmail:'eshophopivirtual@gmail.com'};
 function getEmailConfig(){
-  return JSON.parse(localStorage.getItem('hopi_email_config')||'{"mode":"demo","emailjsServiceId":"","emailjsTemplateId":"","emailjsPublicKey":"","fromName":"HOPI VIRTUAL","fromEmail":"eshophopivirtual@gmail.com"}');
+  const saved=getAppSetting('email_config',{});
+  const parsed=(typeof saved==='string')?JSON.parse(saved):(saved||{});
+  return Object.assign({},DEFAULT_EMAIL_CONFIG,parsed);
 }
-function setEmailConfig(c){localStorage.setItem('hopi_email_config',JSON.stringify(c))}
+async function setEmailConfig(c){await saveAppSetting('email_config',c)}
 
 function getEmailLog(){return JSON.parse(localStorage.getItem('hopi_email_log')||'[]')}
 function setEmailLog(l){localStorage.setItem('hopi_email_log',JSON.stringify(l))}
@@ -7161,11 +7164,11 @@ function renderLogTab(log){
   `;
 }
 
-window.toggleTemplate=function(key){
+window.toggleTemplate=async function(key){
   const t=getEmailTemplates();
   if(!t[key])return;
   t[key].enabled=!t[key].enabled;
-  setEmailTemplates(t);
+  await setEmailTemplates(t);
   showToast(t[key].enabled?`E-maily pro "${STATUSES[key].label}" zapnuty`:`E-maily pro "${STATUSES[key].label}" vypnuty`);
   viewAdmin();
 }
@@ -7175,23 +7178,23 @@ window.toggleEditTemplate=function(key){
   viewAdmin();
 }
 
-window.saveTemplate=function(key){
+window.saveTemplate=async function(key){
   const t=getEmailTemplates();
   if(!t[key])return;
   t[key].subject=document.getElementById('tpl_subject_'+key).value;
   t[key].body=document.getElementById('tpl_body_'+key).value;
-  setEmailTemplates(t);
+  await setEmailTemplates(t);
   editingTemplateKey=null;
   showToast('Šablona uložena');
   viewAdmin();
 }
 
-window.resetTemplate=function(key){
+window.resetTemplate=async function(key){
   if(!confirm('Obnovit výchozí text této šablony?'))return;
   const t=getEmailTemplates();
   if(!DEFAULT_EMAIL_TEMPLATES[key])return;
   t[key]={...DEFAULT_EMAIL_TEMPLATES[key]};
-  setEmailTemplates(t);
+  await setEmailTemplates(t);
   showToast('Šablona obnovena');
   viewAdmin();
 }
@@ -7255,22 +7258,22 @@ function showEmailPreview(subject,html){
   modal.onclick=e=>{if(e.target===modal)modal.remove()};
 }
 
-window.setMode=function(mode){
+window.setMode=async function(mode){
   const c=getEmailConfig();
   c.mode=mode;
-  setEmailConfig(c);
+  await setEmailConfig(c);
   showToast(mode==='emailjs'?'Přepnuto na skutečné odesílání':'Přepnuto na DEMO režim');
   viewAdmin();
 }
 
-window.saveEmailConfig=function(){
+window.saveEmailConfig=async function(){
   const c=getEmailConfig();
   c.fromName=document.getElementById('cfg_fromName').value.trim();
   c.fromEmail=document.getElementById('cfg_fromEmail').value.trim();
   c.emailjsServiceId=document.getElementById('cfg_service').value.trim();
   c.emailjsTemplateId=document.getElementById('cfg_template').value.trim();
   c.emailjsPublicKey=document.getElementById('cfg_key').value.trim();
-  setEmailConfig(c);
+  await setEmailConfig(c);
   showToast('Nastavení uloženo');
 }
 
