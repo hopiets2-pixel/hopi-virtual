@@ -2491,6 +2491,10 @@ async function loadAppSettings(){
     _appSettingsLoaded = true;
     // Cache do localStorage pro rychlost při dalším načtení
     try { localStorage.setItem('hopi_app_settings_cache', JSON.stringify(_appSettingsCache)); } catch(e){}
+    // Sync hopi_settings ze Supabase do localStorage → getSettings() funguje na všech zařízeních
+    if(_appSettingsCache['hopi_settings']){
+      try { localStorage.setItem('hopi_settings', JSON.stringify(_appSettingsCache['hopi_settings'])); } catch(e){}
+    }
     console.log('✅ Načteno', Object.keys(_appSettingsCache).length, 'app settings ze Supabase');
   } catch(e){
     console.warn('⚠️ loadAppSettings exception:', e);
@@ -6346,11 +6350,12 @@ function viewWebsiteSettings(){
   `;
 }
 
-window.saveWebsiteSettings=function(){
+window.saveWebsiteSettings=async function(){
   const s=getSettings();
   const fields=['heroBadge','heroLine1','heroLine2','heroLine3','heroSubtitle','shopSectionTitle','aboutSectionTitle','ctaHeadline','ctaSub','newsletterTitle','newsletterSub','footerBrandDesc','feature1Title','feature1Desc','feature2Title','feature2Desc','feature3Title','feature3Desc','feature4Title','feature4Desc'];
   fields.forEach(f=>{const el=document.getElementById('set_'+f);if(el)s[f]=el.value});
   setSettings(s);
+  await saveAppSetting('hopi_settings', s);
   showToast('Texty uloženy · zkontroluj web');
 }
 
