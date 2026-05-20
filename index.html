@@ -4527,22 +4527,51 @@ function viewInfo({t='doprava'}={}){
   const shopName=s.shopName||'HOPI VIRTUAL';
   const shopEmail=s.email||'eshophopivirtual@gmail.com';
   const TOPICS={
-    'doprava':{title:'Doprava a platba',html:`
-      <h2 style="font-family:'Archivo Black',sans-serif;font-size:20px;margin-bottom:14px;margin-top:24px;text-transform:uppercase">📦 Způsoby dopravy</h2>
-      <ul style="padding-left:24px;line-height:1.8">
-        <li><strong style="color:#fff">Zásilkovna</strong> — 79 Kč (zdarma nad 1 500 Kč) · doručení 1–2 pracovní dny</li>
-        <li><strong style="color:#fff">PPL k ruce</strong> — 99 Kč (zdarma nad 1 500 Kč) · přímo na adresu</li>
-        <li><strong style="color:#fff">Kurýr Praha</strong> — 149 Kč · dnes do 3 hodin</li>
-      </ul>
-      <h2 style="font-family:'Archivo Black',sans-serif;font-size:20px;margin-bottom:14px;margin-top:24px;text-transform:uppercase">💳 Platba</h2>
-      <ul style="padding-left:24px;line-height:1.8">
-        <li>Platební karta (Visa, Mastercard)</li>
-        <li>Apple Pay</li>
-        <li>Google Pay</li>
-        <li>Bankovní převod</li>
-        <li>Dobírka (+39 Kč)</li>
-      </ul>
-    `},
+    'doprava':{title:'Doprava a platba',html:(()=>{
+      const sc=getShippingConfig();
+      const s=getSettings();
+      const freeOver=s.freeShippingOver||1500;
+      const shipBase=s.shippingPrice||79;
+      const H2='font-family:\'Archivo Black\',sans-serif;font-size:20px;margin-bottom:14px;margin-top:24px;text-transform:uppercase';
+      const freeNote=`<span style="color:var(--muted);font-size:13px"> (zdarma nad ${formatPrice(freeOver)} Kč)</span>`;
+      // --- Dopravci ---
+      const carriers=[];
+      if(sc.packetaEnabled){
+        carriers.push(`<li><strong style="color:#fff">Zásilkovna</strong> — ${formatPrice(shipBase)} Kč${freeNote} · výdejní místo · 1–2 pracovní dny</li>`);
+      }
+      if(sc.zasilkovnaAddressEnabled){
+        const addrBase=sc.zasilkovnaAddressPrice!=null?sc.zasilkovnaAddressPrice:99;
+        carriers.push(`<li><strong style="color:#fff">Zásilkovna na adresu</strong> — ${formatPrice(addrBase)} Kč${freeNote} · doručení přímo k vám · 1–2 pracovní dny</li>`);
+      }
+      if(sc.pplEnabled){
+        carriers.push(`<li><strong style="color:#fff">PPL k ruce</strong> — 99 Kč${freeNote} · přímo na adresu · 1–2 dny</li>`);
+      }
+      if(sc.kuryrEnabled){
+        carriers.push(`<li><strong style="color:#fff">Kurýr (Praha)</strong> — 149 Kč · dnes do 3 hodin</li>`);
+      }
+      const shippingHtml=carriers.length>0
+        ?`<ul style="padding-left:24px;line-height:1.8">${carriers.join('')}</ul>`
+        :`<p style="color:var(--muted);font-size:14px;margin-top:10px">Způsoby dopravy momentálně nejsou nastaveny. Kontaktuj nás pro více informací.</p>`;
+      // --- Platby ---
+      const pmCfg=getPaymentMethodsConfig();
+      const payLabels={
+        card:'Platební karta (Visa, Mastercard)',
+        applepay:'Apple Pay',
+        googlepay:'Google Pay',
+        transfer:'Bankovní převod <span style="color:var(--muted);font-size:13px">· 1–2 pracovní dny</span>',
+        cod:'Dobírka <span style="color:var(--muted);font-size:13px">· +39 Kč</span>',
+      };
+      const payItems=PAYMENT_METHODS_META.filter(m=>pmCfg[m.key]).map(m=>`<li>${payLabels[m.key]||m.label}</li>`);
+      const paymentHtml=payItems.length>0
+        ?`<ul style="padding-left:24px;line-height:1.8">${payItems.join('')}</ul>`
+        :`<p style="color:var(--muted);font-size:14px;margin-top:10px">Platební metody momentálně nejsou nastaveny. Kontaktuj nás pro více informací.</p>`;
+      return `
+        <h2 style="${H2}">📦 Způsoby dopravy</h2>
+        ${shippingHtml}
+        <h2 style="${H2}">💳 Platba</h2>
+        ${paymentHtml}
+      `;
+    })()},
     'vratky':{title:'Vratky a reklamace',html:`
       <h2 style="font-family:'Archivo Black',sans-serif;font-size:20px;margin-bottom:14px;margin-top:24px;text-transform:uppercase">↩️ 30 dní na vrácení</h2>
       <p>Podle zákona máš právo odstoupit od smlouvy do <strong style="color:#fff">30 dnů</strong> od převzetí zboží bez udání důvodu.</p>
