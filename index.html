@@ -5012,6 +5012,10 @@ function viewAdmin(){
           <label>Název</label><input type="text" id="mName">
           <label>Kategorie</label><select id="mCat"><option value="trika">Trička</option><option value="mikiny">Mikiny</option><option value="cepice">Čepice</option><option value="doplnky">Doplňky</option></select>
           <label>Cena (Kč)</label><input type="number" id="mPrice" min="0">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px">
+            <div><label style="display:block;margin-bottom:6px">Náklady na produkt (Kč)</label><input type="number" id="mProductCost" min="0" step="0.01" placeholder="Výroba / nákup" style="width:100%"><div style="font-size:11px;color:#888;margin-top:3px">Cena výroby nebo nákupu</div></div>
+            <div><label style="display:block;margin-bottom:6px">Náklady na balení (Kč)</label><input type="number" id="mPackagingCost" min="0" step="0.01" placeholder="Krabička, výplň…" style="width:100%"><div style="font-size:11px;color:#888;margin-top:3px">Balicí materiál</div></div>
+          </div>
           <label>Skladem (počet kusů)</label><input type="number" id="mStock" min="0" placeholder="např. 25">
           <label>Velikosti</label><input type="text" id="mSizes" placeholder="S / M / L / XL">
           <label>Badge</label><input type="text" id="mBadge">
@@ -6161,16 +6165,23 @@ function viewProductsAdmin(){
       <div class="panel">
         <div class="panel-head"><h3>Všechny produkty</h3><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted)">[ ${products.length} ]</span></div>
         <table class="atable">
-          <thead><tr><th>Foto</th><th>Název</th><th>Kategorie</th><th>Cena</th><th>Skladem</th><th>Velikosti</th><th>Badge</th><th style="text-align:right">Akce</th></tr></thead>
+          <thead><tr><th>Foto</th><th>Název</th><th>Kategorie</th><th>Cena</th><th>Náklady</th><th>Marže</th><th>Skladem</th><th>Velikosti</th><th>Badge</th><th style="text-align:right">Akce</th></tr></thead>
           <tbody>
-            ${products.length===0?'<tr><td colspan="8" class="table-empty"><strong>Žádné produkty</strong>Klikni "+ Přidat produkt".</td></tr>':products.map(p=>{
+            ${products.length===0?'<tr><td colspan="10" class="table-empty"><strong>Žádné produkty</strong>Klikni "+ Přidat produkt".</td></tr>':products.map(p=>{
               const st=stockStatus(p);
+              const hasCosts=p.productCost!=null||p.packagingCost!=null;
+              const totalCostProd=(p.productCost!=null?p.productCost:0)+(p.packagingCost!=null?p.packagingCost:0);
+              const marginKc=hasCosts?p.price-totalCostProd:null;
+              const marginPct=(hasCosts&&p.price>0)?(marginKc/p.price*100):null;
+              const marginColor=marginKc==null?'var(--muted)':marginKc>=0?'var(--green)':'var(--red)';
               return `
               <tr>
                 <td><div class="p-thumb">${p.photo?`<img src="${p.photo}">`:'<span>HOPI</span>'}</div></td>
                 <td><strong>${escapeHtml(p.name)}</strong></td>
                 <td>${escapeHtml(p.categoryLabel||CATEGORY_LABELS[p.category]||p.category)}</td>
                 <td style="font-family:'JetBrains Mono',monospace;font-weight:700">${formatPrice(p.price)} Kč</td>
+                <td style="font-family:'JetBrains Mono',monospace;font-size:12px">${hasCosts?`<span title="Produkt: ${p.productCost!=null?p.productCost+'Kč':'—'} + Balení: ${p.packagingCost!=null?p.packagingCost+'Kč':'—'}">${formatPrice(totalCostProd)} Kč</span>`:'<span style="color:var(--muted);font-size:11px">nenastaveno</span>'}</td>
+                <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${marginColor}">${marginKc!=null?`${formatPrice(Math.round(marginKc))} Kč<div style="font-size:10px;font-weight:400;color:${marginColor}">${marginPct.toFixed(1)}%</div>`:'<span style="color:var(--muted);font-size:11px">—</span>'}</td>
                 <td>
                   ${p.stock===undefined?'<span style="color:var(--muted);font-size:11px">neomezeno</span>':`
                     <div style="display:flex;align-items:center;gap:8px">
@@ -7533,18 +7544,18 @@ function setCosts(c){localStorage.setItem('hopi_costs',JSON.stringify(c))}
 function calculateOrderMargin(order){
   const products=getProducts();
   const costs=getCosts();
-  let cogs=0; // Cost of goods sold
+  let cogs=0;   // Náklady na produkt (součet productCost * qty)
+  let pack=0;   // Náklady na balení (součet packagingCost * qty)
   order.items.forEach(i=>{
     const p=products.find(x=>x.id===i.productId);
     if(p){
-      const prodCost=p.cost!=null?p.cost:(p.price*costs.production); // pokud produkt má cost, použij, jinak % z ceny
-      cogs+=prodCost*i.qty;
+      if(p.productCost!=null) cogs+=p.productCost*i.qty;
+      if(p.packagingCost!=null) pack+=p.packagingCost*i.qty;
     }
   });
-  const fees=(order.subtotal||order.total)*costs.fees; // poplatek platební brány
-  const shipCost=order.shipPrice?costs.shipping:0;
-  const pack=costs.packaging;
-  const totalCost=cogs+fees+shipCost+pack;
+  const fees=(order.subtotal||order.total)*costs.fees; // % platební brány
+  const shipCost=order.shipPrice?costs.shipping:0;     // doprava (globální sazba)
+  const totalCost=cogs+pack+fees+shipCost;
   const revenue=order.total;
   const margin=revenue-totalCost;
   const marginPct=revenue>0?(margin/revenue)*100:0;
@@ -8305,26 +8316,17 @@ function viewFinance(){
       <div class="panel">
         <div class="panel-head"><h3>⚙️ Nastavení nákladů (pro výpočet marže)</h3><button class="abtn abtn-sm abtn-primary" onclick="saveCosts()">💾 Uložit</button></div>
         <div style="padding:24px">
-          <p style="color:var(--muted);font-size:13px;margin-bottom:20px">Nastav své náklady — web podle nich spočítá skutečnou marži každé objednávky.</p>
+          <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Náklady na produkt a balení nastavuješ přímo u každého produktu. Tady nastav jen náklady společné pro všechny objednávky.</p>
           <div class="settings-grid" class="settings-group">
-            <div>
-              <label style="display:block;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">Výroba (% z prodejní ceny)</label>
-              <input type="number" id="cost_production" value="${(costs.production*100).toFixed(0)}" min="0" max="100" step="1" style="width:100%;padding:10px 14px;border:1px solid #ddd;font-family:'Archivo',sans-serif;font-size:14px;background:#fff;color:#111;margin-bottom:16px">
-              <div style="font-size:11px;color:var(--muted);margin-top:-10px;margin-bottom:16px">Kolik % z ceny produktu tě stojí výroba</div>
-            </div>
-            <div>
-              <label style="display:block;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">Náklady na balení (Kč / obj.)</label>
-              <input type="number" id="cost_packaging" value="${costs.packaging}" min="0" step="1" style="width:100%;padding:10px 14px;border:1px solid #ddd;font-family:'Archivo',sans-serif;font-size:14px;background:#fff;color:#111;margin-bottom:16px">
-            </div>
             <div>
               <label style="display:block;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">Cena dopravy pro tebe (Kč)</label>
               <input type="number" id="cost_shipping" value="${costs.shipping}" min="0" step="1" style="width:100%;padding:10px 14px;border:1px solid #ddd;font-family:'Archivo',sans-serif;font-size:14px;background:#fff;color:#111;margin-bottom:16px">
-              <div style="font-size:11px;color:var(--muted);margin-top:-10px;margin-bottom:16px">Kolik platíš dopravci za balík</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:-10px;margin-bottom:16px">Kolik platíš dopravci za jeden balík</div>
             </div>
             <div>
               <label style="display:block;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">Poplatky platební brány (%)</label>
               <input type="number" id="cost_fees" value="${(costs.fees*100).toFixed(2)}" min="0" max="10" step="0.1" style="width:100%;padding:10px 14px;border:1px solid #ddd;font-family:'Archivo',sans-serif;font-size:14px;background:#fff;color:#111;margin-bottom:16px">
-              <div style="font-size:11px;color:var(--muted);margin-top:-10px">Např. 2.9% u Stripe/GoPay</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:-10px">Např. 1% u GoPay</div>
             </div>
           </div>
         </div>
@@ -8334,9 +8336,10 @@ function viewFinance(){
 }
 
 window.saveCosts=function(){
+  const existing=getCosts();
   const c={
-    production:(Number(document.getElementById('cost_production').value)||0)/100,
-    packaging:Number(document.getElementById('cost_packaging').value)||0,
+    production:existing.production||0,
+    packaging:existing.packaging||0,
     shipping:Number(document.getElementById('cost_shipping').value)||0,
     fees:(Number(document.getElementById('cost_fees').value)||0)/100,
     other:0,
@@ -8719,7 +8722,7 @@ window.adjustStock=function(productId,delta){
 
 window.openProductModal=function(id=null){
   editingId=id;modalPhoto=null;
-  ['mId','mName','mPrice','mSizes','mBadge','mStock'].forEach(f=>{const el=document.getElementById(f);if(el)el.value=''});
+  ['mId','mName','mPrice','mSizes','mBadge','mStock','mProductCost','mPackagingCost'].forEach(f=>{const el=document.getElementById(f);if(el)el.value=''});
   document.getElementById('mCat').value='trika';
   document.getElementById('mMock').value='tee';
   document.getElementById('mDelete').style.display='none';
@@ -8737,6 +8740,10 @@ window.openProductModal=function(id=null){
       document.getElementById('mMock').value=p.mockType||'tee';
       const stockEl=document.getElementById('mStock');
       if(stockEl)stockEl.value=p.stock!==undefined?p.stock:'';
+      const pcEl=document.getElementById('mProductCost');
+      if(pcEl)pcEl.value=p.productCost!=null?p.productCost:'';
+      const pkEl=document.getElementById('mPackagingCost');
+      if(pkEl)pkEl.value=p.packagingCost!=null?p.packagingCost:'';
       if(p.photo){modalPhoto=p.photo;document.getElementById('mPreview').innerHTML=`<img src="${p.photo}">`}
       document.getElementById('mDelete').style.display='';
       document.getElementById('modalTitle').innerText='Upravit produkt';
@@ -8761,7 +8768,11 @@ window.saveFromModal=function(){
   if(price<=0){alert('Zadej cenu');return}
   const stockVal=document.getElementById('mStock')?.value;
   const stock=stockVal===''||stockVal===undefined?undefined:Math.max(0,parseInt(stockVal)||0);
-  const data={name,category:cat,categoryLabel:CATEGORY_LABELS[cat],price,sizes:document.getElementById('mSizes').value.trim(),badge:document.getElementById('mBadge').value.trim(),mockType:document.getElementById('mMock').value,photo:modalPhoto,stock};
+  const productCostVal=document.getElementById('mProductCost')?.value;
+  const productCost=productCostVal===''||productCostVal===undefined?undefined:parseFloat(productCostVal)||0;
+  const packagingCostVal=document.getElementById('mPackagingCost')?.value;
+  const packagingCost=packagingCostVal===''||packagingCostVal===undefined?undefined:parseFloat(packagingCostVal)||0;
+  const data={name,category:cat,categoryLabel:CATEGORY_LABELS[cat],price,sizes:document.getElementById('mSizes').value.trim(),badge:document.getElementById('mBadge').value.trim(),mockType:document.getElementById('mMock').value,photo:modalPhoto,stock,productCost,packagingCost};
   let products=getProducts();
   if(editingId){products=products.map(p=>p.id===editingId?{...p,...data}:p);showToast('Upraveno')}
   else{data.id=products.length?Math.max(...products.map(p=>p.id))+1:1;products.push(data);showToast('Přidáno')}
