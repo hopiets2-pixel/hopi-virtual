@@ -262,6 +262,7 @@ h2.section-title{font-family:'Archivo Black',sans-serif;font-size:clamp(40px,5vw
 .size-btn{min-width:50px;padding:12px 16px;background:transparent;border:1px solid var(--border);color:#fff;cursor:pointer;font-family:'Archivo',sans-serif;font-size:14px;font-weight:600;text-transform:uppercase;transition:all .2s}
 .size-btn:hover{border-color:var(--green-glow);color:var(--green-glow)}
 .size-btn.selected{background:var(--green);color:#fff;border-color:var(--green)}
+.size-btn.out-of-stock{opacity:0.35;cursor:not-allowed;text-decoration:line-through;pointer-events:none}
 .qty-row{display:flex;align-items:center;gap:16px;margin-bottom:24px}
 .qty-controls{display:flex;align-items:center;border:1px solid var(--border)}
 .qty-btn{width:40px;height:40px;background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px}
@@ -1097,19 +1098,44 @@ function cartCount(){return getCart().reduce((s,i)=>s+i.qty,0)}
 function cartTotal(){const products=getProducts();return getCart().reduce((s,i)=>{const p=products.find(x=>x.id===i.productId);return s+(p?p.price*i.qty:0)},0)}
 
 // Stock helpers
-function getStock(p){return p.stock===undefined?999:Number(p.stock)||0}
-function stockStatus(p){
-  const s=getStock(p);
+
+// Vrátí true pokud má produkt více velikostí (oddělených '/')
+function isMultiSize(p){
+  return (p.sizes||'').split('/').map(s=>s.trim()).filter(Boolean).length>1;
+}
+
+// Vrátí počet kusů skladem — volitelně pro konkrétní size
+// Pokud je stock objekt ({S:10,M:5,...}), vrátí součet nebo hodnotu dané size
+function getStock(p,size){
+  if(p.stock===undefined)return 999;
+  if(p.stock!==null&&typeof p.stock==='object'){
+    if(size)return Math.max(0,Number(p.stock[size])||0);
+    // Celkový součet pro všechny size
+    return Object.values(p.stock).reduce((a,v)=>a+Math.max(0,Number(v)||0),0);
+  }
+  return Number(p.stock)||0;
+}
+
+// Vrátí stav skladu — volitelně pro konkrétní size
+function stockStatus(p,size){
+  const s=getStock(p,size);
   if(s<=0)return {label:'Vyprodáno',cls:'stock-out',count:0};
   if(s<=3)return {label:`Poslední ${s} ks`,cls:'stock-low',count:s};
   if(s<=10)return {label:`Skladem ${s} ks`,cls:'stock-low',count:s};
   return {label:'Skladem',cls:'stock-in',count:s};
 }
-function decreaseStock(productId,qty){
+
+// Odečte qty ze skladu — pro multi-size odečte z konkrétní size
+function decreaseStock(productId,qty,size){
   const products=getProducts();
   const p=products.find(x=>x.id===productId);
   if(!p||p.stock===undefined)return;
-  p.stock=Math.max(0,getStock(p)-qty);
+  if(p.stock!==null&&typeof p.stock==='object'&&size){
+    // Multi-size: odečíst ze správné velikosti
+    p.stock={...p.stock,[size]:Math.max(0,(Number(p.stock[size])||0)-qty)};
+  } else {
+    p.stock=Math.max(0,getStock(p)-qty);
+  }
   setProductsLS(products);
 }
 
@@ -2571,7 +2597,7 @@ window.addEventListener('load', async () => {
             found.statusHistory.push({status:'paid',at:Date.now()});
             setOrders(orders);
             // Odečíst sklad (teprve teď když je zaplaceno)
-            found.items.forEach(i => decreaseStock(i.productId, i.qty));
+            found.items.forEach(i => decreaseStock(i.productId, i.qty, i.size));
             // Použít slevu
             if(found.promo){
               const promos = getPromos();
@@ -2993,7 +3019,7 @@ function viewProduct({id}){
           <div class="info-price">${formatPrice(product.price)}<span class="currency">Kč</span></div>
           <div class="info-tax">včetně DPH · <span class="stock-badge ${stock.cls}" style="margin-left:6px"><span class="stock-dot"></span>${escapeHtml(stock.label)}</span></div>
           <p class="info-desc">Premium kvalita, výrazný design, poctivě ušito. ${escapeHtml(product.name)} je kus, na kterém záleží.</p>
-          ${sizes.length>0?`<div class="form-label" style="margin-bottom:12px">Velikost</div><div class="sizes">${sizes.map(sz=>`<button class="size-btn${sizes.length===1?' selected':''}" data-size="${escapeHtml(sz)}">${escapeHtml(sz)}</button>`).join('')}</div>`:''}
+          ${sizes.length>0?`<div class="form-label" style="margin-bottom:12px">Velikost</div><div class="sizes">${sizes.map(sz=>{const szStock=getStock(product,isMultiSize(product)?sz:undefined);const szOut=isMultiSize(product)&&szStock===0;return `<button class="size-btn${sizes.length===1?` selected`:``}${szOut?` out-of-stock`:``}" data-size="${escapeHtml(sz)}" data-stock="${isMultiSize(product)?szStock:9999}" ${szOut?"disabled":""} title="${szOut?"Vyprodáno":""}">${escapeHtml(sz)}</button>`;}).join("")}</div><div id="sizeStockInfo" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-top:-14px;margin-bottom:20px;min-height:16px"></div>`:''}
           <div class="qty-row">
             <div class="form-label">Počet</div>
             <div class="qty-controls">
@@ -3019,6 +3045,17 @@ function viewProduct({id}){
   document.querySelectorAll('.size-btn').forEach(b=>b.addEventListener('click',()=>{
     document.querySelectorAll('.size-btn').forEach(x=>x.classList.remove('selected'));
     b.classList.add('selected');
+    // Zobrazit info o skladu dané velikosti (pouze u multi-size produktů)
+    if(isMultiSize(product)){
+      const szStock=parseInt(b.dataset.stock)||0;
+      const info=document.getElementById('sizeStockInfo');
+      if(info){
+        if(szStock<=0)info.innerHTML='<span style="color:var(--red)">⚠ Tato velikost je vyprodána</span>';
+        else if(szStock<=3)info.innerHTML=`<span style="color:#ff9800">Poslední ${szStock} ks v této velikosti</span>`;
+        else if(szStock<=10)info.innerHTML=`<span style="color:#ff9800">Skladem ${szStock} ks v této velikosti</span>`;
+        else info.innerHTML=`<span style="color:var(--green-glow)">Skladem v této velikosti</span>`;
+      }
+    }
   }));
 
   let qty=1;
@@ -3026,7 +3063,9 @@ function viewProduct({id}){
   const qPlus=document.getElementById('qPlus');
   if(qMinus)qMinus.onclick=()=>{if(qty>1){qty--;document.getElementById('qVal').innerText=qty}};
   if(qPlus)qPlus.onclick=()=>{
-    const max=getStock(product);
+    // Pro multi-size kontroluje stock vybrané velikosti; jinak celkový stock
+    const selectedBtn=document.querySelector('.size-btn.selected');
+    const max=isMultiSize(product)&&selectedBtn?getStock(product,selectedBtn.dataset.size):getStock(product);
     if(qty<max&&qty<99){qty++;document.getElementById('qVal').innerText=qty}
     else if(max<99)showToast(`Skladem máme jen ${max} ks`,'error');
   };
@@ -3510,7 +3549,7 @@ window.submitOrder=function(){
   saveOrder(order);
   localStorage.setItem('hopi_last_order',JSON.stringify(order));
   // Odečíst sklad
-  order.items.forEach(i=>decreaseStock(i.productId,i.qty));
+  order.items.forEach(i=>decreaseStock(i.productId,i.qty,i.size));
   setCart([]);
   setAppliedPromo(null);
   // Poslat do Google Sheets (pokud nastaveno)
@@ -3801,7 +3840,7 @@ async function payViaGoPay(order){
     safeLSset('hopi_last_order', JSON.stringify(order));
     safeLSset('hopi_pending_gopay_payment_id', String(data.id));
     
-    order.items.forEach(i => decreaseStock(i.productId, i.qty));
+    order.items.forEach(i => decreaseStock(i.productId, i.qty, i.size));
     setCart([]);
     setAppliedPromo(null);
     
@@ -5050,7 +5089,11 @@ function viewAdmin(){
             <div><label style="display:block;margin-bottom:6px">Náklady na balení (Kč)</label><input type="number" id="mPackagingCost" min="0" step="0.01" placeholder="Krabička, výplň…" style="width:100%"><div style="font-size:11px;color:#888;margin-top:3px">Balicí materiál</div></div>
           </div>
           <label>Skladem (počet kusů)</label><input type="number" id="mStock" min="0" placeholder="např. 25">
-          <label>Velikosti</label><input type="text" id="mSizes" placeholder="S / M / L / XL">
+          <label>Velikosti</label><input type="text" id="mSizes" placeholder="S / M / L / XL" oninput="onModalSizesChange(this.value)">
+          <div id="mStockSizes" style="display:none;margin-bottom:12px;padding:12px;background:rgba(0,138,63,0.05);border:1px solid rgba(0,138,63,0.2)">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green-glow);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px">Skladem po velikostech</div>
+            <div id="mStockSizesInner"></div>
+          </div>
           <label>Badge</label><input type="text" id="mBadge">
           <label>Typ mock grafiky (bez fotky)</label>
           <select id="mMock"><option value="tee">Tričko černé</option><option value="tee-green">Tričko zelené</option><option value="hoodie">Mikina černá</option><option value="hoodie-green">Mikina zelená</option><option value="cap">Kšiltovka</option><option value="beanie">Beanie</option><option value="mug">Hrnek</option><option value="sticker">Samolepky</option></select>
@@ -6216,9 +6259,13 @@ function viewProductsAdmin(){
                 <td style="font-family:'JetBrains Mono',monospace;font-size:12px">${hasCosts?`<span title="Produkt: ${p.productCost!=null?p.productCost+'Kč':'—'} + Balení: ${p.packagingCost!=null?p.packagingCost+'Kč':'—'}">${formatPrice(totalCostProd)} Kč</span>`:'<span style="color:var(--muted);font-size:11px">nenastaveno</span>'}</td>
                 <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${marginColor}">${marginKc!=null?`${formatPrice(Math.round(marginKc))} Kč<div style="font-size:10px;font-weight:400;color:${marginColor}">${marginPct.toFixed(1)}%</div>`:'<span style="color:var(--muted);font-size:11px">—</span>'}</td>
                 <td>
-                  ${p.stock===undefined?'<span style="color:var(--muted);font-size:11px">neomezeno</span>':`
+                  ${p.stock===undefined?'<span style="color:var(--muted);font-size:11px">neomezeno</span>':isMultiSize(p)&&p.stock!==null&&typeof p.stock==='object'?`
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.8">
+                      ${(p.sizes||'').split('/').map(s=>s.trim()).filter(Boolean).map(sz=>{const cnt=Number(p.stock[sz])||0;const col=cnt===0?'var(--red)':cnt<=3?'#ff9800':'var(--green)';return `<span style="color:${col}">${escapeHtml(sz)}:${cnt}</span>`;}).join('<span style="color:var(--border)"> / </span>')}
+                    </div>
+                  `:`
                     <div style="display:flex;align-items:center;gap:8px">
-                      <strong style="color:${st.count===0?'var(--red)':(st.count<=10?'#ff9800':'var(--green)')};font-family:'JetBrains Mono',monospace">${st.count} ks</strong>
+                      <strong style="color:${stockStatus(p).count===0?'var(--red)':(stockStatus(p).count<=10?'#ff9800':'var(--green)')};font-family:'JetBrains Mono',monospace">${stockStatus(p).count} ks</strong>
                       <button class="stock-quick-btn" onclick="adjustStock(${p.id},1)" title="+1">+</button>
                       <button class="stock-quick-btn" onclick="adjustStock(${p.id},-1)" title="-1">−</button>
                     </div>
@@ -8744,19 +8791,113 @@ window.deletePromo=function(code){
 // ============== PRODUCT MODAL ==============
 let editingId=null;
 let modalPhoto=null;
-window.adjustStock=function(productId,delta){
+
+// Interní stav per-size stocku při editaci v modalu
+// Klíč: název size (string), hodnota: počet kusů (number)
+let _modalSizeStocks={};
+// Předchozí hodnota pole mSizes (pro porovnání při změně)
+let _modalSizesPrev='';
+// Debounce timer pro oninput na mSizes
+let _modalSizesTimer=null;
+
+// Vykreslí per-size stock inputy v modalu
+function renderModalSizeInputs(sizes){
+  const inner=document.getElementById('mStockSizesInner');
+  if(!inner)return;
+  inner.innerHTML=sizes.map(sz=>`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;min-width:48px;text-transform:uppercase">${escapeHtml(sz)}</span>
+      <input type="number" min="0" placeholder="0"
+        value="${_modalSizeStocks[sz]!==undefined?_modalSizeStocks[sz]:0}"
+        oninput="_modalSizeStocks['${escapeHtml(sz).replace(/'/g,"\\'")}'] = Math.max(0,parseInt(this.value)||0)"
+        style="width:100px;padding:8px 10px;background:#0a0a0a;border:1px solid var(--border);color:#fff;font-family:'Archivo',sans-serif;font-size:14px">
+      <span style="font-size:12px;color:var(--muted)">ks</span>
+      ${(_modalSizeStocks[sz]||0)===0?'<span style="font-size:10px;color:var(--red)">0 = vyprodáno</span>':''}
+    </div>`).join('');
+}
+
+// Přepne zobrazení mStock ↔ mStockSizes podle počtu velikostí
+function syncModalStockUI(sizes){
+  const mStockEl=document.getElementById('mStock');
+  const mStockSizesEl=document.getElementById('mStockSizes');
+  if(!mStockEl||!mStockSizesEl)return;
+  if(sizes.length>1){
+    // Multi-size: skrýt jednopolíčkový stock, zobrazit per-size tabulku
+    mStockEl.closest('label') && (mStockEl.previousElementSibling||mStockEl.parentElement);
+    // Skrýt label + input mStock
+    mStockEl.style.display='none';
+    const prevLabel=mStockEl.previousElementSibling;
+    if(prevLabel&&prevLabel.tagName==='LABEL')prevLabel.style.display='none';
+    mStockSizesEl.style.display='';
+    renderModalSizeInputs(sizes);
+  } else {
+    // Single-size: zobrazit mStock, skrýt per-size tabulku
+    mStockEl.style.display='';
+    const prevLabel=mStockEl.previousElementSibling;
+    if(prevLabel&&prevLabel.tagName==='LABEL')prevLabel.style.display='';
+    mStockSizesEl.style.display='none';
+  }
+}
+
+// Handler pro oninput na poli mSizes — s debounce 400ms a confirm dialogem
+window.onModalSizesChange=function(newVal){
+  clearTimeout(_modalSizesTimer);
+  _modalSizesTimer=setTimeout(()=>{
+    const newSizes=(newVal||'').split('/').map(s=>s.trim()).filter(Boolean);
+    const oldSizes=(_modalSizesPrev||'').split('/').map(s=>s.trim()).filter(Boolean);
+
+    // Najít odstraněné size (byly dříve, teď nejsou)
+    const removed=oldSizes.filter(s=>!newSizes.includes(s));
+
+    // Pro každou odstraněnou size se stockem > 0 zobrazit confirm
+    for(const sz of removed){
+      const cnt=_modalSizeStocks[sz]||0;
+      if(cnt>0){
+        const ok=confirm(`Velikost „${sz}" má skladem ${cnt} ks.\nOpravdu ji chceš odebrat? Stock se nenávratně smaže.`);
+        if(!ok){
+          // Vrátit pole mSizes na předchozí hodnotu
+          const el=document.getElementById('mSizes');
+          if(el)el.value=_modalSizesPrev;
+          return; // Zrušit změnu
+        }
+      }
+      // Potvrdit smazání — odebrat ze stocků
+      delete _modalSizeStocks[sz];
+    }
+
+    // Přidat nové size s výchozím stockem 0 (pokud ještě nejsou)
+    newSizes.forEach(sz=>{ if(_modalSizeStocks[sz]===undefined)_modalSizeStocks[sz]=0; });
+
+    _modalSizesPrev=newVal;
+    syncModalStockUI(newSizes);
+  },400);
+};
+window.adjustStock=function(productId,delta,size){
   const products=getProducts();
   const p=products.find(x=>x.id===productId);
   if(!p)return;
-  if(p.stock===undefined)p.stock=0;
-  p.stock=Math.max(0,p.stock+delta);
+  if(p.stock!==null&&typeof p.stock==='object'&&size){
+    // Multi-size: adjustovat konkrétní velikost
+    p.stock={...p.stock,[size]:Math.max(0,(Number(p.stock[size])||0)+delta)};
+  } else {
+    if(p.stock===undefined)p.stock=0;
+    p.stock=Math.max(0,(Number(p.stock)||0)+delta);
+  }
   setProductsLS(products);
   viewAdmin();
 }
 
 window.openProductModal=function(id=null){
   editingId=id;modalPhoto=null;
+  // Resetovat interní stav per-size stocků
+  _modalSizeStocks={};
+  _modalSizesPrev='';
   ['mId','mName','mPrice','mSizes','mBadge','mStock','mProductCost','mPackagingCost'].forEach(f=>{const el=document.getElementById(f);if(el)el.value=''});
+  // Resetovat viditelnost stock polí
+  const mStockEl=document.getElementById('mStock');
+  if(mStockEl){mStockEl.style.display='';const pl=mStockEl.previousElementSibling;if(pl&&pl.tagName==='LABEL')pl.style.display='';}
+  const mStockSizesEl=document.getElementById('mStockSizes');
+  if(mStockSizesEl)mStockSizesEl.style.display='none';
   document.getElementById('mCat').value='trika';
   document.getElementById('mMock').value='tee';
   document.getElementById('mDelete').style.display='none';
@@ -8772,8 +8913,18 @@ window.openProductModal=function(id=null){
       document.getElementById('mSizes').value=p.sizes||'';
       document.getElementById('mBadge').value=p.badge||'';
       document.getElementById('mMock').value=p.mockType||'tee';
-      const stockEl=document.getElementById('mStock');
-      if(stockEl)stockEl.value=p.stock!==undefined?p.stock:'';
+      // Načíst stock — objekt (multi-size) nebo číslo (single)
+      if(p.stock!==null&&typeof p.stock==='object'){
+        // Multi-size: naplnit _modalSizeStocks z objektu
+        _modalSizeStocks={...p.stock};
+      } else {
+        const stockEl=document.getElementById('mStock');
+        if(stockEl)stockEl.value=p.stock!==undefined?p.stock:'';
+      }
+      _modalSizesPrev=p.sizes||'';
+      // Zobrazit správné UI podle počtu size
+      const sizes=(p.sizes||'').split('/').map(s=>s.trim()).filter(Boolean);
+      syncModalStockUI(sizes);
       const pcEl=document.getElementById('mProductCost');
       if(pcEl)pcEl.value=p.productCost!=null?p.productCost:'';
       const pkEl=document.getElementById('mPackagingCost');
@@ -8801,12 +8952,17 @@ window.saveFromModal=function(){
   if(!name){alert('Zadej název');return}
   if(price<=0){alert('Zadej cenu');return}
   const stockVal=document.getElementById('mStock')?.value;
-  const stock=stockVal===''||stockVal===undefined?undefined:Math.max(0,parseInt(stockVal)||0);
+  const sizesVal=document.getElementById('mSizes').value.trim();
+  const sizesArr=(sizesVal||'').split('/').map(s=>s.trim()).filter(Boolean);
+  // Multi-size: uložit stock jako objekt; single-size: jako číslo
+  const stock=sizesArr.length>1
+    ?Object.fromEntries(sizesArr.map(sz=>[sz,Math.max(0,Number(_modalSizeStocks[sz])||0)]))
+    :(stockVal===''||stockVal===undefined?undefined:Math.max(0,parseInt(stockVal)||0));
   const productCostVal=document.getElementById('mProductCost')?.value;
   const productCost=productCostVal===''||productCostVal===undefined?undefined:parseFloat(productCostVal)||0;
   const packagingCostVal=document.getElementById('mPackagingCost')?.value;
   const packagingCost=packagingCostVal===''||packagingCostVal===undefined?undefined:parseFloat(packagingCostVal)||0;
-  const data={name,category:cat,categoryLabel:CATEGORY_LABELS[cat],price,sizes:document.getElementById('mSizes').value.trim(),badge:document.getElementById('mBadge').value.trim(),mockType:document.getElementById('mMock').value,photo:modalPhoto,stock,productCost,packagingCost};
+  const data={name,category:cat,categoryLabel:CATEGORY_LABELS[cat],price,sizes:sizesVal,badge:document.getElementById('mBadge').value.trim(),mockType:document.getElementById('mMock').value,photo:modalPhoto,stock,productCost,packagingCost};
   let products=getProducts();
   if(editingId){products=products.map(p=>p.id===editingId?{...p,...data}:p);showToast('Upraveno')}
   else{data.id=products.length?Math.max(...products.map(p=>p.id))+1:1;products.push(data);showToast('Přidáno')}
