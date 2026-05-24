@@ -965,7 +965,17 @@ function getCart(){return JSON.parse(localStorage.getItem('hopi_cart')||'[]')}
 function setCart(c){localStorage.setItem('hopi_cart',JSON.stringify(c))}
 function getUser(){return JSON.parse(localStorage.getItem('hopi_user')||'null')}
 function setUser(u){u?localStorage.setItem('hopi_user',JSON.stringify(u)):localStorage.removeItem('hopi_user')}
-function getOrders(){return (JSON.parse(localStorage.getItem('hopi_orders')||'[]')).map(o=>({...o,items:o.items||[],customer:o.customer||{}}))}
+function getOrders(){
+  return (JSON.parse(localStorage.getItem('hopi_orders')||'[]')).map(o=>({
+    ...o,
+    items: o.items||[],
+    customer: o.customer||{},
+    total: (typeof o.total==='number'&&!isNaN(o.total)) ? o.total : 0,
+    subtotal: (typeof o.subtotal==='number'&&!isNaN(o.subtotal)) ? o.subtotal : 0,
+    status: o.status||'new',
+    date: o.date||new Date().toISOString(),
+  }));
+}
 function setOrders(o){
   // Zjistit které objednávky se změnily oproti předchozímu stavu a syncnout je
   const oldOrders = JSON.parse(localStorage.getItem('hopi_orders')||'[]');
@@ -1008,7 +1018,7 @@ async function syncOrdersFromSupabase(){
     if (error) { console.warn('Orders load fail:', error.message); return false; }
     if (data) {
       // Rekonstruovat plný order objekt z JSON blobu
-      const orders = data.map(row => ({...row.data, id: row.id}));
+      const orders = data.map(row => ({...row.data, id: row.id, items: row.data?.items || [], customer: row.data?.customer || {}}));
       localStorage.setItem('hopi_orders', JSON.stringify(orders));
       console.log('✅ Načteno '+orders.length+' objednávek ze Supabase');
     }
@@ -2408,9 +2418,14 @@ window.syncOrdersFromSheetsManual=async function(){
 
 // ============== GOOGLE SHEETS BACKEND ==============
 function getSheetsConfig(){
+  const fromSupabase=getAppSetting('sheets_config',null);
+  if(fromSupabase)return fromSupabase;
   return JSON.parse(localStorage.getItem('hopi_sheets_config')||'{"enabled":false,"webhookUrl":"","syncOnLoad":true}');
 }
-function setSheetsConfig(c){localStorage.setItem('hopi_sheets_config',JSON.stringify(c))}
+function setSheetsConfig(c){
+  localStorage.setItem('hopi_sheets_config',JSON.stringify(c));
+  saveAppSetting('sheets_config',c);
+}
 
 // Pošle objednávku do Google Sheets
 async function pushOrderToSheets(order){
