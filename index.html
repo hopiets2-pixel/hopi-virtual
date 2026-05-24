@@ -5205,6 +5205,7 @@ function renderSearchResult(p){
 
 // ============ FOLDERS & TAGS ============
 const DEFAULT_FOLDERS=[
+  {id:'active',name:'Aktivní',icon:'⚡',system:true,filter:'status:new,accepted,processing,shipped'},
   {id:'inbox',name:'Všechny',icon:'📥',system:true,filter:'all'},
   {id:'new',name:'Nové',icon:'🆕',system:true,filter:'status:new'},
   {id:'accepted',name:'Přijaté',icon:'✔️',system:true,filter:'status:accepted'},
@@ -5256,7 +5257,7 @@ function countInFolder(folder,orders){
 }
 
 // Globální stav pohledu
-let activeFolder='inbox';
+let activeFolder='active';
 let selectedIds=new Set();
 let searchQuery='';
 let sortBy='date-desc';
