@@ -2408,22 +2408,36 @@ window.syncOrdersFromSheetsManual=async function(){
 
 // ============== GOOGLE SHEETS BACKEND ==============
 function getSheetsConfig(){
+  // Primarne z Supabase (app_settings), fallback na localStorage pro zpetnou kompatibilitu
+  const fromSupabase=getAppSetting('sheets_config',null);
+  if(fromSupabase)return fromSupabase;
   return JSON.parse(localStorage.getItem('hopi_sheets_config')||'{"enabled":false,"webhookUrl":"","syncOnLoad":true}');
 }
-function setSheetsConfig(c){localStorage.setItem('hopi_sheets_config',JSON.stringify(c))}
+function setSheetsConfig(c){
+  localStorage.setItem('hopi_sheets_config',JSON.stringify(c));
+  saveAppSetting('sheets_config',c); // ulozit trvale do Supabase
+}
 
 // Pošle objednávku do Google Sheets
 async function pushOrderToSheets(order){
   const config=getSheetsConfig();
   if(!config.enabled||!config.webhookUrl)return {ok:false,reason:'not_configured'};
   try{
+    // Obohatit polozky o nazev produktu (kosik uklada jen productId)
+    const products=getProducts();
+    const enrichedOrder={
+      ...order,
+      items:(order.items||[]).map(i=>{
+        const p=products.find(x=>x.id===i.productId);
+        return {...i,name:p?p.name:('Produkt #'+i.productId)};
+      })
+    };
     const res=await fetch(config.webhookUrl,{
       method:'POST',
-      mode:'no-cors', // Google Apps Script vyžaduje tohle
+      mode:'no-cors',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify({action:'create',order}),
+      body:JSON.stringify({action:'create',order:enrichedOrder}),
     });
-    // no-cors znamená že nemůžeme číst response, ale pokud nehodí error, funguje
     return {ok:true};
   }catch(e){
     console.error('Sheets error:',e);
