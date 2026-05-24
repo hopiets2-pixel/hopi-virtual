@@ -2272,6 +2272,7 @@ function err(msg) {
                 <button class="abtn abtn-primary" onclick="saveSheetsConfig()">💾 Uložit nastavení</button>
                 <button class="abtn" onclick="testSheetsConnection()">🧪 Otestovat spojení</button>
                 <button class="abtn" onclick="syncOrdersFromSheetsManual()">🔄 Synchronizovat teď</button>
+                <button class="abtn" onclick="syncStockToSheetsManual()">📦 Zásoby teď</button>
               </div>
             </div>
           </div>
@@ -2443,6 +2444,33 @@ async function updateOrderInSheets(orderId,updates){
     });
     return {ok:true};
   }catch(e){return {ok:false,reason:e.message}}
+}
+
+// Synchronizace zásob do Google Sheets (záložka Zásoby)
+async function syncStockToSheets(){
+  const config=getSheetsConfig();
+  if(!config.enabled||!config.webhookUrl)return {ok:false,reason:'not_configured'};
+  try{
+    const products=getProducts().map(p=>({id:p.id,name:p.name,price:p.price,stock:p.stock,sizes:p.sizes}));
+    await fetch(config.webhookUrl,{
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({type:'stock_snapshot',products}),
+    });
+    return {ok:true};
+  }catch(e){
+    console.error('Sheets stock sync error:',e);
+    return {ok:false,reason:e.message};
+  }
+}
+window.syncStockToSheetsManual=async function(){
+  const config=getSheetsConfig();
+  if(!config.enabled||!config.webhookUrl){showToast('❌ Sheets backend není nakonfigurován','error');return}
+  showToast('📦 Synchronizuji zásoby...');
+  const res=await syncStockToSheets();
+  if(res.ok!==false){showToast('✅ Zásoby synchronizovány do Sheets')}
+  else{showToast('❌ Sync zásob selhal — zkontroluj nastavení','error')}
 }
 
 // Stáhne objednávky z Sheets (JSONP technika kvůli CORS)
@@ -3554,6 +3582,7 @@ window.submitOrder=function(){
   setAppliedPromo(null);
   // Poslat do Google Sheets (pokud nastaveno)
   pushOrderToSheets(order).catch(()=>{});
+  syncStockToSheets().catch(()=>{});
   // Auto potvrzovací e-mail zákazníkovi
   sendStatusEmail(order,'new').catch(()=>{});
   go('success');
@@ -8885,6 +8914,7 @@ window.adjustStock=function(productId,delta,size){
     p.stock=Math.max(0,(Number(p.stock)||0)+delta);
   }
   setProductsLS(products);
+  syncStockToSheets().catch(()=>{});
   viewAdmin();
 }
 
@@ -8968,6 +8998,7 @@ window.saveFromModal=function(){
   if(editingId){products=products.map(p=>p.id===editingId?{...p,...data}:p);showToast('Upraveno')}
   else{data.id=products.length?Math.max(...products.map(p=>p.id))+1:1;products.push(data);showToast('Přidáno')}
   setProductsLS(products);
+  syncStockToSheets().catch(()=>{});
   closeModal();
   viewAdmin();
 }
