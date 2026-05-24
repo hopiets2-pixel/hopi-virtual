@@ -938,7 +938,7 @@ const DEFAULT_SETTINGS={
   feature1Desc:'Bavlna 220 g/m², mikiny 320 g/m².',
   feature2Title:'Doručení 48 h',
   feature2Desc:'Expedujeme z Čech. Zásilkovna, PPL i kurýr k ruce.',
-  feature3Title:'Vratky zdarma',
+  feature3Title:'Vrácení zdarma',
   feature3Desc:'Nesedí? Pošli zpátky do 30 dní.',
   feature4Title:'Limitované kusy',
   feature4Desc:'Každý drop v omezeném počtu.',
@@ -2800,7 +2800,7 @@ function renderFooter(){
             <h4>Pomoc</h4>
             <ul>
               <li><a onclick="go('info?t=doprava')">Doprava a platba</a></li>
-              <li><a onclick="go('info?t=vratky')">Vratky</a></li>
+              <li><a onclick="go('info?t=vratky')">Vrácení a reklamace</a></li>
               <li><a onclick="go('info?t=velikosti')">Velikostní tabulka</a></li>
             </ul>
           </div>
@@ -2998,7 +2998,7 @@ function viewHome(){
         </div>
       </div>
       <div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">Jak dlouho trvá doručení? <span class="faq-toggle">+</span></div><div class="faq-a">Expedujeme do 24 h, doručení 1–2 pracovní dny.</div></div>
-      <div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">Mohu zboží vrátit? <span class="faq-toggle">+</span></div><div class="faq-a">Ano, do 30 dnů. Vratky zdarma.</div></div>
+      <div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">Mohu zboží vrátit? <span class="faq-toggle">+</span></div><div class="faq-a">Ano, do 30 dnů. Vrácení zdarma.</div></div>
       <div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">Dodáváte na Slovensko? <span class="faq-toggle">+</span></div><div class="faq-a">Ano, doručení 2–3 dny.</div></div>
       <div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">Můžu platit kartou? <span class="faq-toggle">+</span></div><div class="faq-a">Kartou, Apple Pay, Google Pay, převodem i dobírkou.</div></div>
     </section>
@@ -4670,7 +4670,7 @@ function viewInfo({t='doprava'}={}){
         ${paymentHtml}
       `;
     })()},
-    'vratky':{title:'Vratky a reklamace',html:`
+    'vratky':{title:'Vrácení a reklamace',html:`
       <h2 style="font-family:'Archivo Black',sans-serif;font-size:20px;margin-bottom:14px;margin-top:24px;text-transform:uppercase">↩️ 30 dní na vrácení</h2>
       <p>Podle zákona máš právo odstoupit od smlouvy do <strong style="color:#fff">30 dnů</strong> od převzetí zboží bez udání důvodu.</p>
       <h2 style="font-family:'Archivo Black',sans-serif;font-size:20px;margin-bottom:14px;margin-top:24px;text-transform:uppercase">Podmínky vrácení</h2>
