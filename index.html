@@ -2469,6 +2469,8 @@ async function updateOrderInSheets(orderId,updates){
   }catch(e){return {ok:false,reason:e.message}}
 }
 
+
+
 // Synchronizace zásob do Google Sheets (záložka Zásoby)
 async function syncStockToSheets(){
   const config=getSheetsConfig();
@@ -3605,6 +3607,7 @@ window.submitOrder=function(){
   setAppliedPromo(null);
   // Poslat do Google Sheets (pokud nastaveno)
   pushOrderToSheets(order).catch(()=>{});
+  syncStockToSheets().catch(()=>{});
   syncStockToSheets().catch(()=>{});
   // Auto potvrzovací e-mail zákazníkovi
   sendStatusEmail(order,'new').catch(()=>{});
@@ -5057,10 +5060,8 @@ function viewAdmin(){
   }
   // Sync z Google Sheets při prvním načtení
   const sheetsConfig=getSheetsConfig();
-  if(sheetsConfig.enabled&&sheetsConfig.syncOnLoad&&!window._sheetsSynced){
-    window._sheetsSynced=true;
-    syncOrdersFromSheets().then(()=>viewAdmin()).catch(()=>{});
-  }
+  // Sync ze Sheets zakázán — Supabase je primární zdroj objednávek
+  // (GET požadavky na Apps Script blokuje Safari kvůli CORS)
   const orders=getOrders();
   const newCount=orders.filter(o=>(o.status||'new')==='new').length;
   const processingCount=orders.filter(o=>['accepted','processing'].includes(o.status)).length;
