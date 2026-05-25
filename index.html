@@ -6462,10 +6462,13 @@ window.saveWebsiteSettings=async function(){
 
 // ============== PAYMENTS (SNIPCART) SETTINGS ==============
 function getPaymentsConfig(){
+  const fromSupabase=getAppSetting('payments_config',null);
+  if(fromSupabase)return fromSupabase;
   return JSON.parse(localStorage.getItem('hopi_payments_config')||'{"provider":"none","snipcartTestKey":"","snipcartLiveKey":"","mode":"test","currency":"czk"}');
 }
 function setPaymentsConfig(c){
   localStorage.setItem('hopi_payments_config',JSON.stringify(c));
+  saveAppSetting('payments_config',c);
 }
 
 function viewPaymentsSettings(){
@@ -7673,8 +7676,15 @@ window.resendEmail=async function(orderId,status){
   else showToast('❌ '+(r.reason||'chyba'),'error');
   viewAdmin();
 }
-function getCosts(){return JSON.parse(localStorage.getItem('hopi_costs')||'{"production":0.35,"shipping":45,"packaging":12,"fees":0.029,"other":0}')}
-function setCosts(c){localStorage.setItem('hopi_costs',JSON.stringify(c))}
+function getCosts(){
+  const fromSupabase=getAppSetting('hopi_costs',null);
+  if(fromSupabase)return fromSupabase;
+  return JSON.parse(localStorage.getItem('hopi_costs')||'{"production":0.35,"shipping":45,"packaging":12,"fees":0.029,"other":0}');
+}
+function setCosts(c){
+  localStorage.setItem('hopi_costs',JSON.stringify(c));
+  saveAppSetting('hopi_costs',c);
+}
 
 function calculateOrderMargin(order){
   const products=getProducts();
@@ -7820,9 +7830,14 @@ window.deleteComplaint=function(id){
 
 // ============== INVOICES (iDoklad) ==============
 function getInvoiceConfig(){
+  const fromSupabase=getAppSetting('invoice_config',null);
+  if(fromSupabase)return fromSupabase;
   return JSON.parse(localStorage.getItem('hopi_invoice_config')||'{"provider":"idoklad","clientId":"","clientSecret":"","enabled":false,"autoIssue":false,"sendInvoiceEmail":false,"companyName":"HOPI VIRTUAL s.r.o.","companyIco":"","companyDic":"","companyAddress":""}');
 }
-function setInvoiceConfig(c){localStorage.setItem('hopi_invoice_config',JSON.stringify(c))}
+function setInvoiceConfig(c){
+  localStorage.setItem('hopi_invoice_config',JSON.stringify(c));
+  saveAppSetting('invoice_config',c);
+}
 function getInvoicesLog(){return JSON.parse(localStorage.getItem('hopi_invoices_log')||'[]')}
 function setInvoicesLog(l){localStorage.setItem('hopi_invoices_log',JSON.stringify(l))}
 
@@ -8500,10 +8515,24 @@ window.exportFinanceCSV=function(){
 }
 
 // ============== MONETIZACE ==============
-function getPromos(){return JSON.parse(localStorage.getItem('hopi_promos')||'[]')}
-function setPromos(p){localStorage.setItem('hopi_promos',JSON.stringify(p))}
-function getNotifSettings(){return JSON.parse(localStorage.getItem('hopi_notif')||'{"botEnabled":false,"telegramChat":"","discordWebhook":"","emailAlerts":true,"notifyOnNew":true,"notifyOnPaid":true,"notifyOnShipped":false}')}
-function setNotifSettings(n){localStorage.setItem('hopi_notif',JSON.stringify(n))}
+function getPromos(){
+  const fromSupabase=getAppSetting('hopi_promos',null);
+  if(fromSupabase)return fromSupabase;
+  return JSON.parse(localStorage.getItem('hopi_promos')||'[]');
+}
+function setPromos(p){
+  localStorage.setItem('hopi_promos',JSON.stringify(p));
+  saveAppSetting('hopi_promos',p);
+}
+function getNotifSettings(){
+  const fromSupabase=getAppSetting('hopi_notif',null);
+  if(fromSupabase)return fromSupabase;
+  return JSON.parse(localStorage.getItem('hopi_notif')||'{"botEnabled":false,"telegramChat":"","discordWebhook":"","emailAlerts":true,"notifyOnNew":true,"notifyOnPaid":true,"notifyOnShipped":false}');
+}
+function setNotifSettings(n){
+  localStorage.setItem('hopi_notif',JSON.stringify(n));
+  saveAppSetting('hopi_notif',n);
+}
 
 function viewMonetize(){
   const promos=getPromos();
