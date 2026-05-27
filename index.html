@@ -1034,7 +1034,7 @@ async function notifyAdmin(type, order=null){
     }
     const res = await fetch(SUPABASE_URL + '/functions/v1/send-admin-notification', {
       method: 'POST',
-      headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_KEY },
+      headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
       body: JSON.stringify(payload),
     });
     const data = await res.json().catch(()=>({}));
