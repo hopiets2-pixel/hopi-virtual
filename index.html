@@ -1018,8 +1018,8 @@ async function notifyAdmin(type, order=null){
         const p = products.find(x=>x.id===i.productId);
         return { name: p?.name || ('Produkt #'+i.productId), quantity: i.qty, size: i.size||'' };
       });
-      const payMap = { cod:'Dobírka', bank:'Bankovní převod', card:'Karta (GoPay)', applepay:'Apple Pay', googlepay:'Google Pay' };
-      const shipMap = { zasilkovna:'Zásilkovna výdejní místo', zasilkovna_address:'Zásilkovna na adresu', ppl:'PPL', courier:'Kurýr' };
+      const payMap = { cod:'Dobírka', transfer:'Bankovní převod', card:'Platební karta', applepay:'Apple Pay', googlepay:'Google Pay' };
+      const shipMap = { zasilkovna:'Zásilkovna výdejní místo', zasilkovna_address:'Zásilkovna na adresu', ppl:'PPL k ruce', kuryr:'Kurýr' };
       payload.order = {
         id: order.id,
         customer_name: ((order.customer?.firstName||'')+' '+(order.customer?.lastName||'')).trim(),
