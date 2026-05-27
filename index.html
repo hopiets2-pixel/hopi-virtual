@@ -1000,6 +1000,58 @@ function setOrders(o){
     });
   }
 }
+// ============== ADMIN NOTIFIKACE (Telegram + Email) ==============
+async function notifyAdmin(type, order=null){
+  try {
+    const notif = (typeof getNotifSettings === 'function') ? getNotifSettings() : null;
+    // Respektovat checkboxy z admin panelu (Notifikace)
+    if(notif){
+      if(type==='new_order' && notif.notifyOnNew===false) return {ok:false,skipped:true};
+      if(type==='payment_received' && notif.notifyOnPaid===false) return {ok:false,skipped:true};
+      if(type==='order_shipped' && notif.notifyOnShipped===false) return {ok:false,skipped:true};
+    }
+    // Sestavit normalizovaná data objednávky pro Edge Function
+    let payload = { type, channels: { telegram: true, email: notif?.emailAlerts !== false } };
+    if(order){
+      const products = (typeof getProducts==='function') ? getProducts() : [];
+      const items = (order.items||[]).map(i=>{
+        const p = products.find(x=>x.id===i.productId);
+        return { name: p?.name || ('Produkt #'+i.productId), quantity: i.qty, size: i.size||'' };
+      });
+      const payMap = { cod:'Dobírka', bank:'Bankovní převod', card:'Karta (GoPay)', applepay:'Apple Pay', googlepay:'Google Pay' };
+      const shipMap = { zasilkovna:'Zásilkovna výdejní místo', zasilkovna_address:'Zásilkovna na adresu', ppl:'PPL', courier:'Kurýr' };
+      payload.order = {
+        id: order.id,
+        customer_name: ((order.customer?.firstName||'')+' '+(order.customer?.lastName||'')).trim(),
+        customer_email: order.customer?.email || '',
+        customer_phone: order.customer?.phone || '',
+        total: order.total,
+        currency: 'Kč',
+        payment_method: payMap[order.pay] || order.pay,
+        shipping_method: shipMap[order.ship] || order.ship,
+        items,
+      };
+    }
+    const res = await fetch(SUPABASE_URL + '/functions/v1/send-admin-notification', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_KEY },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(()=>({}));
+    console.log('[notifyAdmin]', type, data);
+    return data;
+  } catch(e){
+    console.warn('[notifyAdmin] error:', e);
+    return { ok:false, error: String(e) };
+  }
+}
+window.testAdminNotif = async function(){
+  showToast('Odesílám testovací notifikaci...');
+  const r = await notifyAdmin('test');
+  if(r?.ok) showToast('✅ Test odeslán — zkontroluj Telegram');
+  else showToast('❌ Chyba: '+(r?.error||'neznámá'),'error');
+};
+
 function saveOrder(o){
   const orders=getOrders();
   orders.unshift(o);
@@ -3611,6 +3663,8 @@ window.submitOrder=function(){
   syncStockToSheets().catch(()=>{});
   // Auto potvrzovací e-mail zákazníkovi
   sendStatusEmail(order,'new').catch(()=>{});
+  // 🔔 Admin notifikace (Telegram + Email)
+  notifyAdmin('new_order', order).catch(()=>{});
   go('success');
 }
 
@@ -3891,6 +3945,8 @@ async function payViaGoPay(order){
     // (kdyby byl výpadek mezi tímhle a redirectem, objednávka bude v Supabase
     //  s paymentStatus pending — vyřeší webhook nebo handleGoPayReturn)
     saveOrder(order);
+    // 🔔 Admin notifikace o nové objednávce (před přesměrováním na GoPay)
+    notifyAdmin('new_order', order).catch(()=>{});
     safeLSset('hopi_pending_gopay_order', JSON.stringify(order));
     safeLSset('hopi_last_order', JSON.stringify(order));
     safeLSset('hopi_pending_gopay_payment_id', String(data.id));
@@ -8697,7 +8753,7 @@ function viewMonetize(){
           </div>
           <div style="margin-top:20px;display:flex;gap:10px">
             <button class="abtn abtn-primary" onclick="saveNotifSettings()">💾 Uložit</button>
-            <button class="abtn" onclick="showToast('Testovací zpráva odeslána (demo)')">📤 Odeslat test</button>
+            <button class="abtn" onclick="testAdminNotif()">📤 Odeslat test</button>
           </div>
           <div style="margin-top:20px;padding:14px;background:#fff8e1;border:1px solid #ffd54f;font-size:13px;color:#f57f17;font-family:'JetBrains Mono',monospace">
             ℹ️ Napojení na skutečné API (Telegram Bot API / Discord Webhooks) vyžaduje backend server. Údaje si zde uložíš a backend je později použije.
