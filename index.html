@@ -3123,7 +3123,7 @@ function viewProduct({id}){
           </div>
           <div class="info-price">${formatPrice(product.price)}<span class="currency">Kč</span></div>
           <div class="info-tax">včetně DPH · <span class="stock-badge ${stock.cls}" style="margin-left:6px"><span class="stock-dot"></span>${escapeHtml(stock.label)}</span></div>
-          <p class="info-desc">Premium kvalita, výrazný design, poctivě ušito. ${escapeHtml(product.name)} je kus, na kterém záleží.</p>
+          <p class="info-desc">${product.description?escapeHtml(product.description):`Premium kvalita, výrazný design, poctivě ušito. ${escapeHtml(product.name)} je kus, na kterém záleží.`}</p>
           ${sizes.length>0?`<div class="form-label" style="margin-bottom:12px">Velikost</div><div class="sizes">${sizes.map(sz=>{const szStock=getStock(product,isMultiSize(product)?sz:undefined);const szOut=isMultiSize(product)&&szStock===0;return `<button class="size-btn${sizes.length===1?` selected`:``}${szOut?` out-of-stock`:``}" data-size="${escapeHtml(sz)}" data-stock="${isMultiSize(product)?szStock:9999}" ${szOut?"disabled":""} title="${szOut?"Vyprodáno":""}">${escapeHtml(sz)}</button>`;}).join("")}</div><div id="sizeStockInfo" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-top:-14px;margin-bottom:20px;min-height:16px"></div>`:''}
           <div class="qty-row">
             <div class="form-label">Počet</div>
@@ -5204,6 +5204,7 @@ function viewAdmin(){
             <div id="mStockSizesInner"></div>
           </div>
           <label>Badge</label><input type="text" id="mBadge">
+          <label>Popisek produktu</label><textarea id="mDesc" rows="3" placeholder="Krátký popis produktu zobrazený na stránce produktu…" style="width:100%;padding:10px 12px;border:1px solid #ddd;font-family:'Archivo',sans-serif;font-size:14px;background:#fff;color:#111;resize:vertical"></textarea>
           <label>Typ mock grafiky (bez fotky)</label>
           <select id="mMock"><option value="tee">Tričko černé</option><option value="tee-green">Tričko zelené</option><option value="hoodie">Mikina černá</option><option value="hoodie-green">Mikina zelená</option><option value="cap">Kšiltovka</option><option value="beanie">Beanie</option><option value="mug">Hrnek</option><option value="sticker">Samolepky</option></select>
         </div>
@@ -9033,6 +9034,7 @@ window.openProductModal=function(id=null){
   _modalSizeStocks={};
   _modalSizesPrev='';
   ['mId','mName','mPrice','mSizes','mBadge','mStock','mProductCost','mPackagingCost'].forEach(f=>{const el=document.getElementById(f);if(el)el.value=''});
+  const mDescEl=document.getElementById('mDesc');if(mDescEl)mDescEl.value='';
   // Resetovat viditelnost stock polí
   const mStockEl=document.getElementById('mStock');
   if(mStockEl){mStockEl.style.display='';const pl=mStockEl.previousElementSibling;if(pl&&pl.tagName==='LABEL')pl.style.display='';}
@@ -9069,6 +9071,8 @@ window.openProductModal=function(id=null){
       if(pcEl)pcEl.value=p.productCost!=null?p.productCost:'';
       const pkEl=document.getElementById('mPackagingCost');
       if(pkEl)pkEl.value=p.packagingCost!=null?p.packagingCost:'';
+      const descEl=document.getElementById('mDesc');
+      if(descEl)descEl.value=p.description||'';
       if(p.photo){modalPhoto=p.photo;document.getElementById('mPreview').innerHTML=`<img src="${p.photo}">`}
       document.getElementById('mDelete').style.display='';
       document.getElementById('modalTitle').innerText='Upravit produkt';
@@ -9102,7 +9106,7 @@ window.saveFromModal=function(){
   const productCost=productCostVal===''||productCostVal===undefined?undefined:parseFloat(productCostVal)||0;
   const packagingCostVal=document.getElementById('mPackagingCost')?.value;
   const packagingCost=packagingCostVal===''||packagingCostVal===undefined?undefined:parseFloat(packagingCostVal)||0;
-  const data={name,category:cat,categoryLabel:CATEGORY_LABELS[cat],price,sizes:sizesVal,badge:document.getElementById('mBadge').value.trim(),mockType:document.getElementById('mMock').value,photo:modalPhoto,stock,productCost,packagingCost};
+  const data={name,category:cat,categoryLabel:CATEGORY_LABELS[cat],price,sizes:sizesVal,badge:document.getElementById('mBadge').value.trim(),description:document.getElementById('mDesc')?.value.trim()||'',mockType:document.getElementById('mMock').value,photo:modalPhoto,stock,productCost,packagingCost};
   let products=getProducts();
   if(editingId){products=products.map(p=>p.id===editingId?{...p,...data}:p);showToast('Upraveno')}
   else{data.id=products.length?Math.max(...products.map(p=>p.id))+1:1;products.push(data);showToast('Přidáno')}
