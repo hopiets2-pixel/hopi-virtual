@@ -475,6 +475,24 @@ h2.section-title{font-family:'Archivo Black',sans-serif;font-size:clamp(40px,5vw
 .photo-preview img{width:100%;height:100%;object-fit:cover}
 .photo-preview-empty{text-align:center;font-family:'JetBrains Mono',monospace;font-size:12px}
 .photo-preview-empty::before{content:"+";display:block;font-size:40px;color:var(--green);margin-bottom:6px}
+/* --- Admin galerie fotek produktu --- */
+.mgallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.mgallery-item{position:relative;aspect-ratio:1;background:#f0f0f0;border:1px solid #ddd;overflow:hidden}
+.mgallery-item img{width:100%;height:100%;object-fit:cover}
+.mgallery-item-del{position:absolute;top:3px;right:3px;background:rgba(229,57,53,0.85);color:#fff;border:none;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:13px;line-height:22px;text-align:center;padding:0}
+.mgallery-add{aspect-ratio:1;background:#f8f8f8;border:2px dashed #ccc;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:#888;font-size:11px;font-family:'JetBrains Mono',monospace;gap:4px;transition:border-color .2s}
+.mgallery-add:hover{border-color:var(--green)}
+.mgallery-add-icon{font-size:28px;color:var(--green);line-height:1}
+.mgallery-uploading{position:absolute;inset:0;background:rgba(255,255,255,0.8);display:flex;align-items:center;justify-content:center;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--green)}
+/* --- Zákaznická galerie na stránce produktu --- */
+.prod-gallery-main{position:relative;width:100%;aspect-ratio:1;overflow:hidden;background:#f4f4f4}
+.prod-gallery-main img{width:100%;height:100%;object-fit:cover;display:block}
+.prod-gallery-arrow{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.45);color:#fff;border:none;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;z-index:2}
+.prod-gallery-arrow.left{left:8px}
+.prod-gallery-arrow.right{right:8px}
+.prod-gallery-dots{display:flex;justify-content:center;gap:6px;margin-top:8px}
+.prod-gallery-dot{width:7px;height:7px;border-radius:50%;background:#ccc;border:none;padding:0;cursor:pointer;transition:background .2s}
+.prod-gallery-dot.active{background:var(--green)}
 .modal-footer{padding:20px 28px;border-top:1px solid #eee;display:flex;justify-content:space-between;gap:10px;background:#fafafa;position:sticky;bottom:0}
 
 /* === SEARCH OVERLAY === */
@@ -1397,7 +1415,9 @@ function showToast(msg,type='success'){
 }
 
 function getMockHTML(product){
-  if(product.photo)return `<div class="mock mock-photo"><img src="${product.photo}" alt=""></div>`;
+  // Zobrazí první fotku (pro kartičky produktu v gridu)
+  const firstPhoto=(product.images&&product.images.length)?product.images[0]:product.photo;
+  if(firstPhoto)return `<div class="mock mock-photo"><img src="${firstPhoto}" alt=""></div>`;
   const t=product.mockType||'tee';
   const c={
     'tee':'<div class="mock mock-tee"><div class="mock-logo-box">HOPI</div></div>',
@@ -3102,6 +3122,17 @@ function viewProduct({id}){
   const mockHTML=getMockHTML(product);
   const stock=stockStatus(product);
   const soldOut=stock.count===0;
+  // Galerie fotek: nové pole images nebo zpětně kompatibilní photo
+  const galleryImgs=(product.images&&product.images.length)?product.images:(product.photo?[product.photo]:[]);
+  const hasGallery=galleryImgs.length>0;
+  const galleryHTML=hasGallery?`
+    <div class="prod-gallery-main" id="prodGalleryMain">
+      ${product.badge?`<div class="gallery-badge">${escapeHtml(product.badge)}</div>`:''}
+      <img src="${galleryImgs[0]}" id="prodGalleryImg" alt="${escapeHtml(product.name)}">
+      ${galleryImgs.length>1?`<button class="prod-gallery-arrow left" onclick="prodGalleryNav(-1)">&#8249;</button><button class="prod-gallery-arrow right" onclick="prodGalleryNav(1)">&#8250;</button>`:''}
+    </div>
+    ${galleryImgs.length>1?`<div class="prod-gallery-dots" id="prodGalleryDots">${galleryImgs.map((_,i)=>`<button class="prod-gallery-dot${i===0?' active':''}" onclick="prodGalleryGo(${i})"></button>`).join('')}</div>`:''}`
+  :`<div class="gallery-main">${product.badge?`<div class="gallery-badge">${escapeHtml(product.badge)}</div>`:''} ${mockHTML}</div>`;
 
   document.getElementById('app').innerHTML=`
     ${renderNavbar()}
@@ -3109,10 +3140,7 @@ function viewProduct({id}){
       <div class="breadcrumb"><a onclick="go('home')">Home</a> / <a onclick="go('home')">Shop</a> / <span>${escapeHtml(product.name)}</span></div>
       <div class="product-detail">
         <div>
-          <div class="gallery-main">
-            ${product.badge?`<div class="gallery-badge">${escapeHtml(product.badge)}</div>`:''}
-            ${mockHTML}
-          </div>
+          ${galleryHTML}
         </div>
         <div>
           <div class="info-category">${escapeHtml(product.categoryLabel||product.category)}</div>
@@ -3146,6 +3174,17 @@ function viewProduct({id}){
     </main>
     ${renderFooter()}
   `;
+
+  // Galerie navigace
+  let _pgIdx=0;
+  const _pgImgs=galleryImgs;
+  window.prodGalleryNav=function(dir){prodGalleryGo((_pgIdx+dir+_pgImgs.length)%_pgImgs.length);}
+  window.prodGalleryGo=function(idx){
+    _pgIdx=idx;
+    const img=document.getElementById('prodGalleryImg');
+    if(img)img.src=_pgImgs[idx];
+    document.querySelectorAll('.prod-gallery-dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
+  }
 
   document.querySelectorAll('.size-btn').forEach(b=>b.addEventListener('click',()=>{
     document.querySelectorAll('.size-btn').forEach(x=>x.classList.remove('selected'));
@@ -5183,13 +5222,10 @@ function viewAdmin(){
         <div class="modal-head"><h3 id="modalTitle">Produkt</h3><button class="modal-close" onclick="closeModal()">×</button></div>
         <div class="modal-body">
           <input type="hidden" id="mId">
-          <label>Foto</label>
-          <label for="mPhoto" class="photo-preview" id="mPreview"><div class="photo-preview-empty">Klikni pro nahrání</div></label>
-          <input type="file" id="mPhoto" accept="image/*" style="display:none" onchange="handleModalPhoto(event)">
-          <div style="display:flex;gap:8px;margin-bottom:18px">
-            <button class="abtn abtn-sm" onclick="document.getElementById('mPhoto').click()">Vybrat</button>
-            <button class="abtn abtn-sm abtn-danger" onclick="removeModalPhoto()">Odstranit</button>
-          </div>
+          <label>Fotky produktu</label>
+          <div class="mgallery-grid" id="mGalleryGrid"></div>
+          <input type="file" id="mPhoto" accept="image/*" multiple style="display:none" onchange="handleModalPhoto(event)">
+          <div style="font-size:11px;color:#888;margin-bottom:16px;font-family:'JetBrains Mono',monospace">Max 5 MB / fotka · Nahrajte libovolný počet fotek</div>
           <label>Název</label><input type="text" id="mName">
           <label>Kategorie</label><select id="mCat"><option value="trika">Trička</option><option value="mikiny">Mikiny</option><option value="cepice">Čepice</option><option value="doplnky">Doplňky</option></select>
           <label>Cena (Kč)</label><input type="number" id="mPrice" min="0">
@@ -6363,7 +6399,7 @@ function viewProductsAdmin(){
               const marginColor=marginKc==null?'var(--muted)':marginKc>=0?'var(--green)':'var(--red)';
               return `
               <tr>
-                <td><div class="p-thumb">${p.photo?`<img src="${p.photo}">`:'<span>HOPI</span>'}</div></td>
+                <td><div class="p-thumb">${(p.images&&p.images.length)?`<img src="${p.images[0]}">`:(p.photo?`<img src="${p.photo}">`:'<span>HOPI</span>')}</div></td>
                 <td><strong>${escapeHtml(p.name)}</strong></td>
                 <td>${escapeHtml(p.categoryLabel||CATEGORY_LABELS[p.category]||p.category)}</td>
                 <td style="font-family:'JetBrains Mono',monospace;font-weight:700">${formatPrice(p.price)} Kč</td>
@@ -8930,7 +8966,8 @@ window.deletePromo=function(code){
 
 // ============== PRODUCT MODAL ==============
 let editingId=null;
-let modalPhoto=null;
+let modalPhoto=null; // zachováno kvůli zpětné kompatibilitě
+let modalImages=[]; // pole URL fotek (Supabase Storage)
 
 // Interní stav per-size stocku při editaci v modalu
 // Klíč: název size (string), hodnota: počet kusů (number)
@@ -9029,7 +9066,7 @@ window.adjustStock=function(productId,delta,size){
 }
 
 window.openProductModal=function(id=null){
-  editingId=id;modalPhoto=null;
+  editingId=id;modalPhoto=null;modalImages=[];
   // Resetovat interní stav per-size stocků
   _modalSizeStocks={};
   _modalSizesPrev='';
@@ -9044,7 +9081,7 @@ window.openProductModal=function(id=null){
   document.getElementById('mMock').value='tee';
   document.getElementById('mDelete').style.display='none';
   document.getElementById('modalTitle').innerText='Přidat produkt';
-  document.getElementById('mPreview').innerHTML='<div class="photo-preview-empty">Klikni pro nahrání</div>';
+  renderModalGallery();
   if(id){
     const p=getProduct(id);
     if(p){
@@ -9073,7 +9110,9 @@ window.openProductModal=function(id=null){
       if(pkEl)pkEl.value=p.packagingCost!=null?p.packagingCost:'';
       const descEl=document.getElementById('mDesc');
       if(descEl)descEl.value=p.description||'';
-      if(p.photo){modalPhoto=p.photo;document.getElementById('mPreview').innerHTML=`<img src="${p.photo}">`}
+      // Načíst fotky — nové pole images nebo zpětně kompatibilní photo
+      if(p.images&&p.images.length){modalImages=[...p.images];}else if(p.photo){modalImages=[p.photo];}else{modalImages=[];}
+      renderModalGallery();
       document.getElementById('mDelete').style.display='';
       document.getElementById('modalTitle').innerText='Upravit produkt';
     }
@@ -9081,14 +9120,59 @@ window.openProductModal=function(id=null){
   document.getElementById('productModal').classList.add('show');
 }
 window.closeModal=function(){document.getElementById('productModal').classList.remove('show')}
-window.handleModalPhoto=function(e){
-  const f=e.target.files[0];if(!f)return;
-  if(f.size>2*1024*1024){alert('Max 2 MB');return}
-  const r=new FileReader();
-  r.onload=ev=>{modalPhoto=ev.target.result;document.getElementById('mPreview').innerHTML=`<img src="${modalPhoto}">`};
-  r.readAsDataURL(f);
+
+// --- Galerie fotek produktu (admin modal) ---
+function renderModalGallery(){
+  const grid=document.getElementById('mGalleryGrid');
+  if(!grid)return;
+  let html='';
+  modalImages.forEach((url,i)=>{
+    html+=`<div class="mgallery-item"><img src="${url}" alt=""><button class="mgallery-item-del" onclick="removeModalImage(${i})" title="Smazat">×</button></div>`;
+  });
+  html+=`<div class="mgallery-add" onclick="document.getElementById('mPhoto').click()"><span class="mgallery-add-icon">+</span><span>Přidat</span></div>`;
+  grid.innerHTML=html;
 }
-window.removeModalPhoto=function(){modalPhoto=null;document.getElementById('mPhoto').value='';document.getElementById('mPreview').innerHTML='<div class="photo-preview-empty">Klikni pro nahrání</div>'}
+
+window.removeModalImage=function(idx){
+  modalImages.splice(idx,1);
+  renderModalGallery();
+}
+
+window.handleModalPhoto=async function(e){
+  const files=Array.from(e.target.files);
+  if(!files.length)return;
+  const grid=document.getElementById('mGalleryGrid');
+  for(const f of files){
+    if(f.size>5*1024*1024){showToast('Max 5 MB / fotka','error');continue;}
+    // Zobrazit loading placeholder
+    const loadId='mgload_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+    const placeholder=document.createElement('div');
+    placeholder.className='mgallery-item';
+    placeholder.id=loadId;
+    placeholder.innerHTML='<div class="mgallery-uploading">Nahrávám…</div>';
+    // Vložit před tlačítko Přidat
+    const addBtn=grid.querySelector('.mgallery-add');
+    if(addBtn)grid.insertBefore(placeholder,addBtn);
+    try{
+      const ext=f.name.split('.').pop()||'jpg';
+      const path=`products/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const{data,error}=await supabaseClient.storage.from('product-images').upload(path,f,{contentType:f.type,upsert:false});
+      if(error)throw error;
+      const{data:urlData}=supabaseClient.storage.from('product-images').getPublicUrl(path);
+      modalImages.push(urlData.publicUrl);
+      modalPhoto=modalImages[0]; // zpětná kompatibilita
+    }catch(err){
+      showToast('Chyba nahrávání: '+err.message,'error');
+    }
+    // Odebrat placeholder
+    const pl=document.getElementById(loadId);
+    if(pl)pl.remove();
+  }
+  e.target.value='';
+  renderModalGallery();
+}
+
+window.removeModalPhoto=function(){modalImages=[];modalPhoto=null;document.getElementById('mPhoto').value='';renderModalGallery();}
 window.saveFromModal=function(){
   const name=document.getElementById('mName').value.trim();
   const cat=document.getElementById('mCat').value;
@@ -9106,7 +9190,7 @@ window.saveFromModal=function(){
   const productCost=productCostVal===''||productCostVal===undefined?undefined:parseFloat(productCostVal)||0;
   const packagingCostVal=document.getElementById('mPackagingCost')?.value;
   const packagingCost=packagingCostVal===''||packagingCostVal===undefined?undefined:parseFloat(packagingCostVal)||0;
-  const data={name,category:cat,categoryLabel:CATEGORY_LABELS[cat],price,sizes:sizesVal,badge:document.getElementById('mBadge').value.trim(),description:document.getElementById('mDesc')?.value.trim()||'',mockType:document.getElementById('mMock').value,photo:modalPhoto,stock,productCost,packagingCost};
+  const data={name,category:cat,categoryLabel:CATEGORY_LABELS[cat],price,sizes:sizesVal,badge:document.getElementById('mBadge').value.trim(),description:document.getElementById('mDesc')?.value.trim()||'',mockType:document.getElementById('mMock').value,photo:modalImages[0]||null,images:[...modalImages],stock,productCost,packagingCost};
   let products=getProducts();
   if(editingId){products=products.map(p=>p.id===editingId?{...p,...data}:p);showToast('Upraveno')}
   else{data.id=products.length?Math.max(...products.map(p=>p.id))+1:1;products.push(data);showToast('Přidáno')}
