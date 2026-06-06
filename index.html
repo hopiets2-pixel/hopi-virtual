@@ -117,6 +117,13 @@ footer{background:#000;padding:80px 40px 30px;border-top:1px solid var(--border)
 .footer-col li{margin-bottom:10px}
 .footer-col a{color:var(--muted);text-decoration:none;font-size:14px;cursor:pointer}
 .footer-col a:hover{color:var(--green-glow)}
+.partners-bar{border-bottom:1px solid var(--border);padding:40px 40px}
+.partners-bar-inner{max-width:1400px;margin:0 auto}
+.partners-bar h5{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;text-align:center;margin-bottom:28px}
+.partners-logos{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:32px}
+.partners-logos a{display:flex;align-items:center;justify-content:center;opacity:0.55;transition:opacity .2s,filter .2s;filter:grayscale(1)}
+.partners-logos a:hover{opacity:1;filter:grayscale(0)}
+.partners-logos img{height:44px;max-width:160px;object-fit:contain;display:block}
 .footer-bottom{padding-top:30px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px}
 .footer-bottom p{color:var(--muted);font-size:13px;font-family:'JetBrains Mono',monospace}
 .footer-bottom a{color:var(--muted);text-decoration:none;cursor:pointer}
@@ -848,6 +855,9 @@ h2.section-title{font-family:'Archivo Black',sans-serif;font-size:clamp(40px,5vw
   .feature:last-child{border-bottom:none}
   .page{padding:100px 20px 60px}
   footer{padding:60px 20px 20px}
+  .partners-bar{padding:30px 20px}
+  .partners-logos{gap:20px}
+  .partners-logos img{height:36px;max-width:120px}
   .footer-top{grid-template-columns:1fr 1fr;gap:40px;padding-bottom:40px}
   .footer-brand{grid-column:span 2}
   .product-detail{grid-template-columns:1fr;gap:30px}
@@ -2863,6 +2873,18 @@ function renderNavbar(){
 function renderFooter(){
   const s=getSettings();
   return `
+    ${(function(){
+      const partners=(getAppSetting('hopi_partners',[])).filter(p=>p.enabled&&p.logoUrl);
+      if(!partners.length)return '';
+      return `<div class="partners-bar">
+        <div class="partners-bar-inner">
+          <h5>Partneři &amp; spolupráce</h5>
+          <div class="partners-logos">
+            ${partners.map(p=>`<a href="${escapeHtml(p.url||'#')}" target="_blank" rel="noopener" title="${escapeHtml(p.name||'')}"><img src="${escapeHtml(p.logoUrl)}" alt="${escapeHtml(p.name||'Partner')}"></a>`).join('')}
+          </div>
+        </div>
+      </div>`;
+    })()}
     <footer>
       <div class="footer-inner">
         <div class="footer-top">
@@ -6471,7 +6493,7 @@ function viewProductsAdmin(){
 
 function viewWebsiteSettings(){
   const s=getSettings();
-  setTimeout(()=>{if(typeof renderCategoriesList==='function')renderCategoriesList();},50);
+  setTimeout(()=>{if(typeof renderCategoriesList==='function')renderCategoriesList();if(typeof renderPartnersList==='function')renderPartnersList();},50);
   return `
     <div class="view-head">
       <div><h1>Nastavení webu</h1><div class="sub">Tady upravuješ texty, které vidí zákazník · změny se projeví hned</div></div>
@@ -6624,6 +6646,15 @@ function viewWebsiteSettings(){
           <button type="submit" class="abtn abtn-primary">💾 Uložit všechny změny</button>
         </div>
       </form>
+
+      <div class="panel" style="margin-top:24px">
+        <div class="panel-head"><h3>🤝 Partneři &amp; spolupráce</h3><button class="abtn abtn-sm abtn-primary" onclick="window.savePartners()">💾 Uložit partnery</button></div>
+        <div style="padding:24px">
+          <p style="color:var(--muted);font-size:13px;margin-bottom:20px">Loga partnerů se zobrazí v pruhu nad patičkou eshopu. Zobrazí se jen aktivní partneři s nahraným logem. Max. doporučeno 8 partnerů.</p>
+          <div id="partnersList"></div>
+          <button class="abtn abtn-sm" style="margin-top:12px" onclick="window.addPartnerRow()">+ Přidat partnera</button>
+        </div>
+      </div>
     </div>
   `;
 }
@@ -6669,6 +6700,80 @@ window.saveCategories=async function(){
   await saveAppSetting('hopi_categories', updated);
   _appSettingsCache['hopi_categories']=updated;
   showToast('Kategorie uloženy');
+};
+
+// ============== SPRÁVA PARTNERŮ ==============
+window.renderPartnersList=function(){
+  const partners=getAppSetting('hopi_partners',[]);
+  const el=document.getElementById('partnersList');
+  if(!el)return;
+  el.innerHTML=partners.length?partners.map((p,i)=>`
+    <div style="display:grid;grid-template-columns:auto 1fr 1fr auto auto;gap:10px;align-items:center;margin-bottom:8px;padding:12px 14px;background:#0a0a0a;border:1px solid var(--border)">
+      <div style="width:60px;height:44px;background:#1a1a1a;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+        ${p.logoUrl?`<img src="${escapeHtml(p.logoUrl)}" style="max-width:56px;max-height:40px;object-fit:contain">`:'<span style="color:var(--muted);font-size:11px">logo</span>'}
+      </div>
+      <input type="text" id="pName_${i}" value="${escapeHtml(p.name||'')}" placeholder="Název partnera" style="padding:8px 10px;background:#fff;border:1px solid #ccc;color:#111;font-family:'Archivo',sans-serif;font-size:13px;outline:none;border-radius:4px;width:100%">
+      <input type="text" id="pUrl_${i}" value="${escapeHtml(p.url||'')}" placeholder="https://partner.cz" style="padding:8px 10px;background:#fff;border:1px solid #ccc;color:#111;font-family:'Archivo',sans-serif;font-size:13px;outline:none;border-radius:4px;width:100%">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--muted);white-space:nowrap;flex-shrink:0">
+        <input type="checkbox" id="pEnabled_${i}" ${p.enabled?'checked':''} style="accent-color:var(--green)"> zobrazit
+      </label>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <label class="abtn abtn-sm" style="cursor:pointer;white-space:nowrap" title="Nahrát logo">
+          📷 Logo<input type="file" accept="image/*" style="display:none" onchange="window.uploadPartnerLogo(event,${i})">
+        </label>
+        <button class="abtn abtn-sm" style="color:var(--red);border-color:var(--red)" onclick="window.deletePartnerRow(${i})">✕</button>
+      </div>
+    </div>
+  `).join(''):'<p style="color:var(--muted);font-size:13px">Zatím žádní partneři. Přidej prvního kliknutím níže.</p>';
+};
+
+window.addPartnerRow=function(){
+  const partners=getAppSetting('hopi_partners',[]);
+  if(partners.length>=8){showToast('Maximálně 8 partnerů','error');return;}
+  partners.push({name:'',url:'',logoUrl:'',enabled:true});
+  _appSettingsCache['hopi_partners']=partners;
+  renderPartnersList();
+};
+
+window.deletePartnerRow=function(i){
+  const partners=getAppSetting('hopi_partners',[]);
+  partners.splice(i,1);
+  _appSettingsCache['hopi_partners']=partners;
+  renderPartnersList();
+};
+
+window.uploadPartnerLogo=async function(e,i){
+  const f=e.target.files[0];
+  if(!f)return;
+  showToast('Nahrávám logo…');
+  try{
+    const ext=f.name.split('.').pop()||'png';
+    const path='partners/'+Date.now()+'_'+Math.random().toString(36).slice(2)+'.'+ext;
+    const{data,error}=await supabaseClient.storage.from('product-images').upload(path,f,{contentType:f.type,upsert:false});
+    if(error)throw error;
+    const{data:urlData}=supabaseClient.storage.from('product-images').getPublicUrl(path);
+    const partners=getAppSetting('hopi_partners',[]);
+    if(partners[i])partners[i].logoUrl=urlData.publicUrl;
+    _appSettingsCache['hopi_partners']=partners;
+    renderPartnersList();
+    showToast('Logo nahráno');
+  }catch(err){
+    showToast('Chyba nahrávání: '+err.message,'error');
+  }
+  e.target.value='';
+};
+
+window.savePartners=async function(){
+  const partners=getAppSetting('hopi_partners',[]);
+  const updated=partners.map((p,i)=>({
+    name: (document.getElementById('pName_'+i)||{}).value||p.name||'',
+    url: (document.getElementById('pUrl_'+i)||{}).value||p.url||'',
+    logoUrl: p.logoUrl||'',
+    enabled: document.getElementById('pEnabled_'+i)?document.getElementById('pEnabled_'+i).checked:p.enabled
+  }));
+  await saveAppSetting('hopi_partners', updated);
+  _appSettingsCache['hopi_partners']=updated;
+  showToast('Partneři uloženi');
 };
 
 window.saveWebsiteSettings=async function(){
