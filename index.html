@@ -983,7 +983,7 @@ const DEFAULT_SETTINGS={
   feature2Title:'Doručení 48 h',
   feature2Desc:'Expedujeme z Čech. Zásilkovna, PPL i kurýr k ruce.',
   feature3Title:'Vrácení zdarma',
-  feature3Desc:'Nesedí? Pošli zpátky do 30 dní.',
+  feature3Desc:'Nesedí? Pošli zpátky do 14 dní.',
   feature4Title:'Limitované kusy',
   feature4Desc:'Každý drop v omezeném počtu.',
   freeShippingOver:1500,
@@ -3115,7 +3115,7 @@ function viewHome(){
         </div>
       </div>
       <div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">Jak dlouho trvá doručení? <span class="faq-toggle">+</span></div><div class="faq-a">Expedujeme do 24 h, doručení 1–2 pracovní dny.</div></div>
-      <div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">Mohu zboží vrátit? <span class="faq-toggle">+</span></div><div class="faq-a">Ano, do 30 dnů. Vrácení zdarma.</div></div>
+      <div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">Mohu zboží vrátit? <span class="faq-toggle">+</span></div><div class="faq-a">Ano, do 14 dnů od převzetí bez udání důvodu. Zboží musí být nepoužité a nepoškozené. Náklady na zpáteční dopravu hradí zákazník. Peníze vrátíme do 14 dnů od přijetí zboží.</div></div>
       <div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">Dodáváte na Slovensko? <span class="faq-toggle">+</span></div><div class="faq-a">Ano, doručení 2–3 dny.</div></div>
       <div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">Můžu platit kartou? <span class="faq-toggle">+</span></div><div class="faq-a">Kartou, Apple Pay, Google Pay, převodem i dobírkou.</div></div>
     </section>
@@ -3210,8 +3210,7 @@ function viewProduct({id}){
             ${soldOut?`
               <button class="btn sold-out-btn" disabled style="grid-column:1/-1">Vyprodáno</button>
             `:`
-              <button class="btn btn-outline" id="addToCart">Přidat do košíku</button>
-              <button class="btn btn-primary" id="buyNow">Koupit teď <span class="arrow">→</span></button>
+              <button class="btn btn-primary" id="addToCart">Přidat do košíku</button>
             `}
           </div>
         </div>
@@ -3267,17 +3266,8 @@ function viewProduct({id}){
     const ex=cart.find(i=>i.productId===product.id&&i.size===getSize());
     if(ex)ex.qty+=qty;else cart.push({productId:product.id,size:getSize(),qty});
     setCart(cart);
-    showToast('Přidáno do košíku');
     render();
-  };
-  const buyBtn=document.getElementById('buyNow');
-  if(buyBtn)buyBtn.onclick=()=>{
-    if(sizes.length>1&&!getSize()){showToast('Vyber velikost','error');return}
-    const cart=getCart();
-    const ex=cart.find(i=>i.productId===product.id&&i.size===getSize());
-    if(ex)ex.qty+=qty;else cart.push({productId:product.id,size:getSize(),qty});
-    setCart(cart);
-    setTimeout(()=>go('checkout'),300);
+    openAddedToCartModal(product, getSize(), qty);
   };
 }
 
@@ -4677,7 +4667,7 @@ function viewComplaint({order:orderId}={}){
             </label>
             <label class="complaint-reason">
               <input type="radio" name="reason" value="return">
-              <div><strong>↩️ Odstoupení od smlouvy</strong><small>Vrácení do 30 dnů bez udání důvodu</small></div>
+              <div><strong>↩️ Odstoupení od smlouvy</strong><small>Vrácení do 14 dnů bez udání důvodu</small></div>
             </label>
             <label class="complaint-reason">
               <input type="radio" name="reason" value="other">
@@ -8966,31 +8956,42 @@ function viewMonetize(){
         <div style="padding:24px">
           <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Nastavení nabídek, které zvýší průměrnou hodnotu objednávky.</p>
           <div style="display:grid;gap:12px">
-            <label style="display:flex;align-items:center;gap:14px;padding:14px;border:1px solid #eee;cursor:pointer">
-              <input type="checkbox" checked style="accent-color:var(--green);width:18px;height:18px">
+            <!-- Progress bar doprava zdarma — vždy aktivní, řízeno shipping_config -->
+            <div style="display:flex;align-items:center;gap:14px;padding:14px;border:1px solid #333;background:#1a1a1a">
               <div style="flex:1">
-                <strong style="display:block">Nabízet "Doplň ještě X Kč do dopravy zdarma"</strong>
-                <span style="font-size:12px;color:var(--muted)">V košíku zobrazit chybějící částku</span>
+                <strong style="display:block;color:#fff">Doplň ještě X Kč do dopravy zdarma</strong>
+                <span style="font-size:12px;color:var(--muted)">Progress bar v modalu "Přidáno do košíku" — limit dle Nastavení dopravy</span>
               </div>
-              <div style="background:#e8f5e9;color:#2e7d32;padding:4px 10px;font-size:11px;font-weight:700;text-transform:uppercase">AKTIVNÍ</div>
-            </label>
-            <label style="display:flex;align-items:center;gap:14px;padding:14px;border:1px solid #eee;cursor:pointer">
-              <input type="checkbox" style="accent-color:var(--green);width:18px;height:18px">
+              <div style="background:#1b5e20;color:#a5d6a7;padding:4px 10px;font-size:11px;font-weight:700;text-transform:uppercase;white-space:nowrap">✅ AKTIVNÍ</div>
+            </div>
+            <!-- Doporučené produkty — funkční toggle -->
+            <div style="display:flex;align-items:center;gap:14px;padding:14px;border:1px solid #333;background:#1a1a1a">
+              <input type="checkbox" id="upsell_cross_enabled" ${(getUpsellSettings()).crossSellEnabled?'checked':''} style="accent-color:var(--green);width:18px;height:18px;flex-shrink:0">
               <div style="flex:1">
-                <strong style="display:block">Doporučované produkty u detailu</strong>
-                <span style="font-size:12px;color:var(--muted)">"Mohlo by se ti líbit" na stránce produktu</span>
+                <strong style="display:block;color:#fff">Doporučované produkty — "Mohlo by se ti líbit"</strong>
+                <span style="font-size:12px;color:var(--muted)">Zobrazit v modalu "Přidáno do košíku" náhodné produkty ze stejné kategorie</span>
+                <div style="margin-top:10px;display:flex;align-items:center;gap:10px">
+                  <label style="font-size:12px;color:var(--muted)">Počet produktů:</label>
+                  <select id="upsell_cross_count" style="background:#111;color:#fff;border:1px solid #444;padding:4px 8px;font-size:13px">
+                    <option value="1" ${(getUpsellSettings()).crossSellCount===1?'selected':''}>1</option>
+                    <option value="2" ${(getUpsellSettings()).crossSellCount===2?'selected':''}>2</option>
+                    <option value="3" ${!(getUpsellSettings()).crossSellCount||(getUpsellSettings()).crossSellCount===3?'selected':''}>3</option>
+                    <option value="4" ${(getUpsellSettings()).crossSellCount===4?'selected':''}>4</option>
+                  </select>
+                </div>
               </div>
-              <div style="background:#fff3e0;color:#e65100;padding:4px 10px;font-size:11px;font-weight:700;text-transform:uppercase">PŘIPRAVENO</div>
-            </label>
-            <label style="display:flex;align-items:center;gap:14px;padding:14px;border:1px solid #eee;cursor:pointer">
-              <input type="checkbox" style="accent-color:var(--green);width:18px;height:18px">
+            </div>
+            <!-- Balíček 3 za 2 — připraveno, neimplementováno -->
+            <div style="display:flex;align-items:center;gap:14px;padding:14px;border:1px solid #333;background:#1a1a1a;opacity:.5">
+              <input type="checkbox" disabled style="accent-color:var(--green);width:18px;height:18px;flex-shrink:0">
               <div style="flex:1">
-                <strong style="display:block">Balíček 3 za 2</strong>
-                <span style="font-size:12px;color:var(--muted)">Koupíš 3 trička, nejlevnější zdarma</span>
+                <strong style="display:block;color:#fff">Balíček 3 za 2</strong>
+                <span style="font-size:12px;color:var(--muted)">Koupíš 3 trička, nejlevnější zdarma — připravujeme</span>
               </div>
-              <div style="background:#fff3e0;color:#e65100;padding:4px 10px;font-size:11px;font-weight:700;text-transform:uppercase">PŘIPRAVENO</div>
-            </label>
+              <div style="background:#3e2723;color:#ffcc80;padding:4px 10px;font-size:11px;font-weight:700;text-transform:uppercase;white-space:nowrap">PŘIPRAVUJEME</div>
+            </div>
           </div>
+          <button class="abtn abtn-primary" style="margin-top:20px" onclick="saveUpsellSettings()">💾 Uložit nastavení</button>
         </div>
       </div>
 
@@ -9451,7 +9452,107 @@ window.resetProd=function(){
   if(!confirm('Obnovit výchozí produkty?'))return;
   setProductsLS(DEFAULT_PRODUCTS);showToast('Obnoveno');viewAdmin();
 }
+
+// ============== ADDED TO CART MODAL ==============
+
+// Výchozí hodnoty upsell nastavení
+const DEFAULT_UPSELL={crossSellEnabled:true,crossSellCount:3};
+
+function getUpsellSettings(){
+  return getAppSetting('hopi_upsell', DEFAULT_UPSELL);
+}
+
+function openAddedToCartModal(product, size, qty){
+  const s=getSettings();
+  const freeOver=s.freeShippingOver||1500;
+  const total=cartTotal();
+  const remaining=Math.max(0, freeOver-total);
+  const pct=Math.min(100, Math.round((total/freeOver)*100));
+
+  const upsell=getUpsellSettings();
+  const showCross=upsell.crossSellEnabled;
+  const crossCount=Math.max(1,Math.min(4,upsell.crossSellCount||3));
+
+  // Sestavit sekci "Mohlo by se ti líbit"
+  let crossHtml='';
+  if(showCross){
+    const allProducts=getProducts().filter(p=>p.id!==product.id&&getStock(p)>0);
+    // Preferujeme stejnou kategorii
+    const samecat=allProducts.filter(p=>p.category===product.category);
+    const pool=samecat.length>=crossCount?samecat:allProducts;
+    // Náhodný výběr
+    const shuffled=[...pool].sort(()=>Math.random()-0.5).slice(0,crossCount);
+    if(shuffled.length>0){
+      crossHtml=`
+        <div style="margin-top:20px;border-top:1px solid #2a2a2a;padding-top:16px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Mohlo by se ti líbit</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            ${shuffled.map(p=>`
+              <div onclick="closeAddedToCartModal();go('product?id=${p.id}')" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:10px;border:1px solid #2a2a2a;background:#111;transition:border-color .15s" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='#2a2a2a'">
+                <div style="width:56px;height:56px;flex-shrink:0;overflow:hidden;background:#1a1a1a;border:1px solid #222">${getMockHTML(p)}</div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(p.name)}</div>
+                  <div style="font-size:11px;color:#888;margin-top:2px">${escapeHtml(getCategoryLabel(p.category)||p.category||'')}</div>
+                </div>
+                <div style="font-family:'Archivo Black',sans-serif;font-size:14px;color:var(--green-glow);flex-shrink:0">${formatPrice(p.price)} Kč</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>`;
+    }
+  }
+
+  const sizeLabel=size?` · ${escapeHtml(size)}`:'';
+  const progressHtml=remaining>0
+    ?`<div style="font-size:13px;color:#ccc;margin-bottom:8px">🚚 Objednejte ještě za <strong style="color:#fff">${formatPrice(remaining)} Kč</strong> a budete mít dopravu <strong style="color:var(--green-glow)">ZDARMA</strong>.</div>
+      <div style="background:#222;height:6px;border-radius:3px;overflow:hidden">
+        <div style="background:var(--green);height:100%;width:${pct}%;transition:width .4s"></div>
+      </div>`
+    :`<div style="font-size:13px;color:var(--green-glow);margin-bottom:8px">🎉 Máte dopravu <strong>ZDARMA</strong>!</div>
+      <div style="background:#222;height:6px;border-radius:3px;overflow:hidden">
+        <div style="background:var(--green);height:100%;width:100%"></div>
+      </div>`;
+
+  document.getElementById('hopiCartModal').innerHTML=`
+    <div onclick="closeAddedToCartModal()" style="position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9998"></div>
+    <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:#161616;border:1px solid #2a2a2a;width:min(520px,94vw);max-height:90vh;overflow-y:auto;padding:28px 24px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px">
+        <div>
+          <div style="font-family:'Archivo Black',sans-serif;font-size:16px;color:#fff">✅ Přidáno do košíku</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:4px">${escapeHtml(product.name)}${sizeLabel}</div>
+        </div>
+        <button onclick="closeAddedToCartModal()" style="background:none;border:none;color:#888;font-size:22px;cursor:pointer;line-height:1;padding:0 4px">×</button>
+      </div>
+      <div style="margin-bottom:20px">${progressHtml}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <button onclick="closeAddedToCartModal()" style="padding:13px;border:1px solid #444;background:transparent;color:#fff;font-family:'Archivo Black',sans-serif;font-size:13px;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer">Zpět do obchodu</button>
+        <button onclick="closeAddedToCartModal();go('cart')" style="padding:13px;border:none;background:var(--green);color:#fff;font-family:'Archivo Black',sans-serif;font-size:13px;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer">Nákupní košík →</button>
+      </div>
+      ${crossHtml}
+    </div>
+  `;
+  document.getElementById('hopiCartModal').style.display='block';
+  document.body.style.overflow='hidden';
+}
+
+window.closeAddedToCartModal=function(){
+  const m=document.getElementById('hopiCartModal');
+  if(m){m.style.display='none';m.innerHTML='';}
+  document.body.style.overflow='';
+}
+
+// ============== UPSELL ADMIN ==============
+
+window.saveUpsellSettings=async function(){
+  const enabled=document.getElementById('upsell_cross_enabled').checked;
+  const count=parseInt(document.getElementById('upsell_cross_count').value)||3;
+  await saveAppSetting('hopi_upsell',{crossSellEnabled:enabled,crossSellCount:Math.max(1,Math.min(4,count))});
+  showToast('Upsell nastavení uloženo');
+}
 </script>
+
+<!-- Modal kontejner — vždy přítomen v DOM -->
+<div id="hopiCartModal" style="display:none"></div>
 
 </body>
 </html>
