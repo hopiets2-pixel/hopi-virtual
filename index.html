@@ -4035,8 +4035,6 @@ async function payViaGoPay(order){
     // (kdyby byl výpadek mezi tímhle a redirectem, objednávka bude v Supabase
     //  s paymentStatus pending — vyřeší webhook nebo handleGoPayReturn)
     saveOrder(order);
-    // 🔔 Admin notifikace o nové objednávce (před přesměrováním na GoPay)
-    notifyAdmin('new_order', order).catch(()=>{});
     safeLSset('hopi_pending_gopay_order', JSON.stringify(order));
     safeLSset('hopi_last_order', JSON.stringify(order));
     safeLSset('hopi_pending_gopay_payment_id', String(data.id));
@@ -4188,6 +4186,9 @@ window.addEventListener('DOMContentLoaded', () => {
 function viewSuccess(){
   const order=JSON.parse(localStorage.getItem('hopi_last_order')||'null');
   if(!order){document.getElementById('app').innerHTML=`${renderNavbar()}<main class="page"><div class="empty"><h3>Žádná objednávka</h3><a class="btn btn-primary" onclick="go('home')">Zpět</a></div></main>${renderFooter()}`;return}
+  // Zajistit že objednávka je v hopi_orders (pro sledování tlačítkem)
+  const allOrds=getOrders();
+  if(!allOrds.find(x=>x.id===order.id)){allOrds.push(order);localStorage.setItem('hopi_orders',JSON.stringify(allOrds));}
   const payL={card:'Platební karta',applepay:'Apple Pay',googlepay:'Google Pay',transfer:'Bankovní převod',cod:'Dobírka'}[order.pay]||order.pay;
   const shipL={zasilkovna:'Zásilkovna',zasilkovna_address:'Zásilkovna na adresu',ppl:'PPL k ruce',kuryr:'Kurýr'}[order.ship]||order.ship;
   const s=getSettings();
