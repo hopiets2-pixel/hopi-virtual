@@ -1189,6 +1189,20 @@ window.createPacketaShipmentAdmin=async function(orderId){
   }catch(e){showToast('❌ Chyba: '+e.message,'error');}
 }
 
+window.deleteAllOrders=async function(){
+  if(!confirm('Smazat VŠECHNY objednávky?\nTato akce je nevratná!'))return;
+  showToast('Mažu objednávky...');
+  const orders=getOrders();
+  let ok=0,fail=0;
+  for(const o of orders){
+    const res=await deleteOrderFromSupabase(o.id);
+    if(res)ok++;else fail++;
+  }
+  localStorage.setItem('hopi_orders','[]');
+  showToast(fail===0?'Smazáno '+ok+' objednávek':'Smazáno '+ok+', chyba u '+fail);
+  viewAdmin();
+}
+
 async function deleteOrderFromSupabase(id){
   try {
     const { error } = await supabaseClient
@@ -7496,7 +7510,7 @@ function viewShopSettings(){
         <div class="panel-head"><h3>⚠️ Nebezpečná zóna</h3></div>
         <div style="padding:24px">
           <p style="color:var(--muted);font-size:13px;margin-bottom:14px">Tyto akce jsou nevratné.</p>
-          <button class="abtn abtn-danger abtn-sm" onclick="if(confirm('Smazat všechny objednávky?'))(localStorage.setItem('hopi_orders','[]'),showToast('Smazáno'),viewAdmin())">Smazat všechny objednávky</button>
+          <button class="abtn abtn-danger abtn-sm" onclick="deleteAllOrders()">Smazat všechny objednávky</button>
           <button class="abtn abtn-danger abtn-sm" onclick="if(confirm('Obnovit všechna nastavení na výchozí?'))(localStorage.setItem('hopi_settings',JSON.stringify(DEFAULT_SETTINGS)),showToast('Obnoveno'),viewAdmin())">Obnovit texty webu</button>
         </div>
       </div>
@@ -7646,7 +7660,7 @@ function viewStats(){
           <button id="salesFilter_last" class="abtn abtn-sm" onclick="setSalesFilter('last')">Minulý měsíc</button>
           <div style="display:flex;align-items:center;gap:4px;margin-left:8px">
             <button class="abtn abtn-sm" onclick="salesFilterPrevMonth()">&#8249;</button>
-            <span id="salesFilterMonthLabel" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#fff;min-width:80px;text-align:center">${['Led','Úno','Bře','Dub','Kvě','Čer','Čvc','Srp','Zář','Říj','Lis','Pro'][new Date().getMonth()]} ${new Date().getFullYear()}</span>
+            <span id="salesFilterMonthLabel" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#333;min-width:80px;text-align:center;font-weight:700">${['Led','Úno','Bře','Dub','Kvě','Čer','Čvc','Srp','Zář','Říj','Lis','Pro'][new Date().getMonth()]} ${new Date().getFullYear()}</span>
             <button class="abtn abtn-sm" onclick="salesFilterNextMonth()">&#8250;</button>
           </div>
         </div>
