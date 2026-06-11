@@ -4041,7 +4041,6 @@ async function payViaGoPay(order){
     safeLSset('hopi_last_order', JSON.stringify(order));
     safeLSset('hopi_pending_gopay_payment_id', String(data.id));
     
-    order.items.forEach(i => decreaseStock(i.productId, i.qty, i.size));
     setCart([]);
     setAppliedPromo(null);
     
@@ -4134,6 +4133,16 @@ async function handleGoPayReturn(){
       if(lastOrder){
         notifyAdmin('new_order', lastOrder).catch(()=>{});
         notifyAdmin('payment_received', lastOrder).catch(()=>{});
+      }
+      // 🎟️ Inkrementovat použití slevového kódu
+      if(lastOrder && lastOrder.promo){
+        const promos=getPromos();
+        const p=promos.find(x=>x.code===lastOrder.promo.code);
+        if(p){p.uses=(p.uses||0)+1;setPromos(promos);}
+      }
+      // 📦 Odečíst sklad
+      if(lastOrder){
+        lastOrder.items.forEach(i=>decreaseStock(i.productId,i.qty,i.size));
       }
       // 🧾 Auto-vystavení faktury pokud je zapnuto
       if(lastOrder && data.state === 'PAID'){
