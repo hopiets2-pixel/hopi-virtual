@@ -4172,16 +4172,16 @@ async function handleGoPayReturn(){
 }
 
 // Auto-trigger handleru po načtení stránky, pokud URL obsahuje #/gopay-return
-window.addEventListener('hashchange', () => {
-  if(location.hash.startsWith('#/gopay-return')){
-    handleGoPayReturn();
-  }
-});
-window.addEventListener('DOMContentLoaded', () => {
-  if(location.hash.startsWith('#/gopay-return')){
-    handleGoPayReturn();
-  }
-});
+// Guard: zavolat jen jednou (DOMContentLoaded i hashchange mohou přijít současně)
+let _gopayReturnHandled = false;
+function _triggerGoPayReturn(){
+  if(_gopayReturnHandled) return;
+  if(!location.hash.startsWith('#/gopay-return')) return;
+  _gopayReturnHandled = true;
+  handleGoPayReturn();
+}
+window.addEventListener('hashchange', _triggerGoPayReturn);
+window.addEventListener('DOMContentLoaded', _triggerGoPayReturn);
 
 function viewSuccess(){
   const order=JSON.parse(localStorage.getItem('hopi_last_order')||'null');
