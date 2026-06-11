@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HOPI VIRTUAL — Official Merch</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -7562,6 +7564,7 @@ window.saveEcomailSettings=async function(){
 };
 
 function viewStats(){
+  setTimeout(()=>{if(typeof _initSalesTable==='function')_initSalesTable();},50);
   const orders=getOrders();
   const products=getProducts();
   const totalRev=orders.reduce((s,o)=>s+o.total,0);
@@ -7634,8 +7637,102 @@ function viewStats(){
           </tbody>
         </table>
       </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3>📦 Prodeje všech produktů</h3><span id="salesTableTotal" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">${totalItems} ks celkem</span></div>
+        <div style="padding:16px 20px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button id="salesFilter_all" class="abtn abtn-primary abtn-sm" onclick="setSalesFilter('all')">Vše</button>
+          <button id="salesFilter_month" class="abtn abtn-sm" onclick="setSalesFilter('month')">Tento měsíc</button>
+          <button id="salesFilter_last" class="abtn abtn-sm" onclick="setSalesFilter('last')">Minulý měsíc</button>
+          <div style="display:flex;align-items:center;gap:4px;margin-left:8px">
+            <button class="abtn abtn-sm" onclick="salesFilterPrevMonth()">&#8249;</button>
+            <span id="salesFilterMonthLabel" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#fff;min-width:80px;text-align:center"></span>
+            <button class="abtn abtn-sm" onclick="salesFilterNextMonth()">&#8250;</button>
+          </div>
+        </div>
+        <table class="atable" style="margin-top:8px">
+          <thead><tr><th>Produkt</th><th>Kategorie</th><th style="text-align:center">Prodáno (ks)</th><th style="text-align:right">Výnos</th></tr></thead>
+          <tbody id="salesTableBody"></tbody>
+        </table>
+      </div>
     </div>
   `;
+}
+
+// ============== SALES TABLE FILTER ==============
+let _salesFilter='all';
+let _salesFilterYear=new Date().getFullYear();
+let _salesFilterMonth=new Date().getMonth();
+const _monthShort=['Led','Úno','Bře','Dub','Kvě','Čer','Čvc','Srp','Zář','Říj','Lis','Pro'];
+
+function _getSalesFilteredOrders(){
+  const orders=getOrders();
+  if(_salesFilter==='all')return orders;
+  const now=new Date();
+  let y,m;
+  if(_salesFilter==='month'){y=now.getFullYear();m=now.getMonth();}
+  else if(_salesFilter==='last'){const d=new Date(now.getFullYear(),now.getMonth()-1,1);y=d.getFullYear();m=d.getMonth();}
+  else{y=_salesFilterYear;m=_salesFilterMonth;}
+  return orders.filter(o=>{const d=new Date(o.date);return d.getFullYear()===y&&d.getMonth()===m;});
+}
+
+function _renderSalesTable(){
+  const body=document.getElementById('salesTableBody');
+  const total=document.getElementById('salesTableTotal');
+  const label=document.getElementById('salesFilterMonthLabel');
+  if(!body)return;
+  if(label)label.textContent=_monthShort[_salesFilterMonth]+' '+_salesFilterYear;
+  ['all','month','last'].forEach(f=>{
+    const btn=document.getElementById('salesFilter_'+f);
+    if(btn)btn.className='abtn abtn-sm'+(_salesFilter===f?' abtn-primary':'');
+  });
+  const filteredOrders=_getSalesFilteredOrders();
+  const products=getProducts();
+  const counts={};
+  filteredOrders.forEach(o=>o.items.forEach(i=>{counts[i.productId]=(counts[i.productId]||0)+i.qty;}));
+  const totalKs=Object.values(counts).reduce((s,v)=>s+v,0);
+  if(total)total.textContent=totalKs+' ks';
+  const allSales=products.map(p=>({p,qty:counts[p.id]||0,rev:(counts[p.id]||0)*p.price})).sort((a,b)=>b.qty-a.qty);
+  if(allSales.every(x=>x.qty===0)){
+    body.innerHTML='<tr><td colspan="4" class="table-empty"><strong>Žádné prodeje v tomto období</strong></td></tr>';
+    return;
+  }
+  body.innerHTML=allSales.map(({p,qty,rev})=>{
+    const barPct=totalKs>0?Math.round(qty/totalKs*100):0;
+    return '<tr>'
+      +'<td><strong>'+escapeHtml(p.name)+'</strong></td>'
+      +'<td style="font-size:12px;color:var(--muted)">'+escapeHtml(getCategoryLabel(p.category)||p.category||'\u2014')+'</td>'
+      +'<td style="text-align:center"><div style="display:flex;align-items:center;gap:8px">'
+      +'<div style="flex:1;background:#222;height:6px;border-radius:3px;overflow:hidden">'
+      +'<div style="background:'+(qty>0?'var(--green)':'#333')+';height:100%;width:'+barPct+'%"></div></div>'
+      +'<span style="font-family:Arial,sans-serif;font-size:13px;min-width:32px;text-align:right;color:'+(qty>0?'#fff':'var(--muted)')+'">'+qty+'</span>'
+      +'</div></td>'
+      +'<td style="text-align:right;font-family:monospace;font-size:13px;font-weight:700;color:'+(qty>0?'var(--green-glow)':'var(--muted)')+'">'+( qty>0?formatPrice(rev)+' Kč':'—')+'</td>'
+      +'</tr>';
+  }).join('');
+}
+
+window.setSalesFilter=function(f){
+  _salesFilter=f;
+  if(f==='month'){_salesFilterYear=new Date().getFullYear();_salesFilterMonth=new Date().getMonth();}
+  else if(f==='last'){const d=new Date(new Date().getFullYear(),new Date().getMonth()-1,1);_salesFilterYear=d.getFullYear();_salesFilterMonth=d.getMonth();}
+  _renderSalesTable();
+};
+window.salesFilterPrevMonth=function(){
+  _salesFilter='custom';
+  if(_salesFilterMonth===0){_salesFilterMonth=11;_salesFilterYear--;}else _salesFilterMonth--;
+  _renderSalesTable();
+};
+window.salesFilterNextMonth=function(){
+  _salesFilter='custom';
+  if(_salesFilterMonth===11){_salesFilterMonth=0;_salesFilterYear++;}else _salesFilterMonth++;
+  _renderSalesTable();
+};
+function _initSalesTable(){
+  _salesFilter='all';
+  _salesFilterYear=new Date().getFullYear();
+  _salesFilterMonth=new Date().getMonth();
+  setTimeout(_renderSalesTable,50);
 }
 
 // ============== EMAILS ADMIN ==============
@@ -8639,7 +8736,7 @@ function viewFinance(){
 
   // Platby podle metody
   const payMethods={};
-  paidOrders.forEach(o=>{payMethods[o.pay]=(payMethods[o.pay]||{count:0,rev:0});payMethods[o.pay].count++;payMethods[o.pay].rev+=o.total});
+  paidOrders.forEach(o=>{if(!o.pay||o.pay==='undefined')return;payMethods[o.pay]=(payMethods[o.pay]||{count:0,rev:0});payMethods[o.pay].count++;payMethods[o.pay].rev+=o.total;});
   const payLabels={card:'Platební karta',applepay:'Apple Pay',googlepay:'Google Pay',transfer:'Bankovní převod',cod:'Dobírka'};
 
   // Měsíční rozložení
@@ -9484,17 +9581,20 @@ function openAddedToCartModal(product, size, qty){
     const shuffled=[...pool].sort(()=>Math.random()-0.5).slice(0,crossCount);
     if(shuffled.length>0){
       crossHtml=`
-        <div style="margin-top:20px;border-top:1px solid #2a2a2a;padding-top:16px">
-          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Mohlo by se ti líbit</div>
-          <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="margin-top:20px;border-top:1px solid #2a2a2a;padding-top:18px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Mohlo by se ti líbit</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px">
             ${shuffled.map(p=>`
-              <div onclick="closeAddedToCartModal();go('product?id=${p.id}')" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:10px;border:1px solid #2a2a2a;background:#111;transition:border-color .15s" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='#2a2a2a'">
-                <div style="width:56px;height:56px;flex-shrink:0;overflow:hidden;background:#1a1a1a;border:1px solid #222">${getMockHTML(p)}</div>
-                <div style="flex:1;min-width:0">
-                  <div style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(p.name)}</div>
-                  <div style="font-size:11px;color:#888;margin-top:2px">${escapeHtml(getCategoryLabel(p.category)||p.category||'')}</div>
+              <div style="display:flex;flex-direction:column;border:1px solid #2a2a2a;background:#111;overflow:hidden;transition:border-color .15s" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='#2a2a2a'">
+                <div onclick="closeAddedToCartModal();go('product?id=${p.id}')" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:12px;flex:1">
+                  <div style="width:72px;height:72px;flex-shrink:0;overflow:hidden;background:#1a1a1a;border:1px solid #222">${getMockHTML(p)}</div>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:14px;font-weight:700;color:#fff;line-height:1.3;margin-bottom:3px">${escapeHtml(p.name)}</div>
+                    <div style="font-size:12px;color:#888;margin-bottom:6px">${escapeHtml(getCategoryLabel(p.category)||p.category||'')}</div>
+                    <div style="font-family:'Archivo Black',sans-serif;font-size:16px;color:var(--green-glow)">${formatPrice(p.price)} Kč</div>
+                  </div>
                 </div>
-                <div style="font-family:'Archivo Black',sans-serif;font-size:14px;color:var(--green-glow);flex-shrink:0">${formatPrice(p.price)} Kč</div>
+                <button onclick="closeAddedToCartModal();go('product?id=${p.id}')" style="width:100%;padding:11px;background:var(--green);border:none;color:#fff;font-family:'Archivo Black',sans-serif;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer">Zobrazit →</button>
               </div>
             `).join('')}
           </div>
@@ -9515,7 +9615,7 @@ function openAddedToCartModal(product, size, qty){
 
   document.getElementById('hopiCartModal').innerHTML=`
     <div onclick="closeAddedToCartModal()" style="position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9998"></div>
-    <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:#161616;border:1px solid #2a2a2a;width:min(520px,94vw);max-height:90vh;overflow-y:auto;padding:28px 24px">
+    <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:#161616;border:1px solid #2a2a2a;width:min(720px,96vw);max-height:90vh;overflow-y:auto;padding:28px 28px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px">
         <div>
           <div style="font-family:'Archivo Black',sans-serif;font-size:16px;color:#fff">✅ Přidáno do košíku</div>
