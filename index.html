@@ -4130,6 +4130,11 @@ async function handleGoPayReturn(){
     if(data.state === 'PAID' || data.state === 'AUTHORIZED'){
       // ✅ Úspěšná platba — uložit do Supabase + Packeta zásilka
       if(lastOrder && _supabaseReady) saveOrderToSupabase(lastOrder);
+      // 🔔 Admin notifikace — nová objednávka + přijatá platba
+      if(lastOrder){
+        notifyAdmin('new_order', lastOrder).catch(()=>{});
+        notifyAdmin('payment_received', lastOrder).catch(()=>{});
+      }
       // 🧾 Auto-vystavení faktury pokud je zapnuto
       if(lastOrder && data.state === 'PAID'){
         const invConfig=getInvoiceConfig();
