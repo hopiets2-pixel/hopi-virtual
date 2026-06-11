@@ -7646,12 +7646,12 @@ function viewStats(){
           <button id="salesFilter_last" class="abtn abtn-sm" onclick="setSalesFilter('last')">Minulý měsíc</button>
           <div style="display:flex;align-items:center;gap:4px;margin-left:8px">
             <button class="abtn abtn-sm" onclick="salesFilterPrevMonth()">&#8249;</button>
-            <span id="salesFilterMonthLabel" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#fff;min-width:80px;text-align:center"></span>
+            <span id="salesFilterMonthLabel" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#fff;min-width:80px;text-align:center">${['Led','Úno','Bře','Dub','Kvě','Čer','Čvc','Srp','Zář','Říj','Lis','Pro'][new Date().getMonth()]} ${new Date().getFullYear()}</span>
             <button class="abtn abtn-sm" onclick="salesFilterNextMonth()">&#8250;</button>
           </div>
         </div>
         <table class="atable" style="margin-top:8px">
-          <thead><tr><th>Produkt</th><th>Kategorie</th><th style="text-align:center">Prodáno (ks)</th><th style="text-align:right">Výnos</th></tr></thead>
+          <thead><tr><th>Produkt</th><th>Kategorie</th><th style="text-align:center;min-width:140px">Prodáno (ks)</th><th style="text-align:right">Výnos</th></tr></thead>
           <tbody id="salesTableBody"></tbody>
         </table>
       </div>
@@ -7705,7 +7705,7 @@ function _renderSalesTable(){
       +'<td style="text-align:center"><div style="display:flex;align-items:center;gap:8px">'
       +'<div style="flex:1;background:#222;height:6px;border-radius:3px;overflow:hidden">'
       +'<div style="background:'+(qty>0?'var(--green)':'#333')+';height:100%;width:'+barPct+'%"></div></div>'
-      +'<span style="font-family:Arial,sans-serif;font-size:13px;min-width:32px;text-align:right;color:'+(qty>0?'#fff':'var(--muted)')+'">'+qty+'</span>'
+      +'<span style="font-family:Arial,sans-serif;font-size:14px;font-weight:700;min-width:40px;text-align:right;color:'+(qty>0?'#fff':'var(--muted)')+'">'+qty+'</span>'
       +'</div></td>'
       +'<td style="text-align:right;font-family:monospace;font-size:13px;font-weight:700;color:'+(qty>0?'var(--green-glow)':'var(--muted)')+'">'+( qty>0?formatPrice(rev)+' Kč':'—')+'</td>'
       +'</tr>';
