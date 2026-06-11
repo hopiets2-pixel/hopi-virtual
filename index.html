@@ -7651,7 +7651,7 @@ function viewStats(){
           </div>
         </div>
         <table class="atable" style="margin-top:8px">
-          <thead><tr><th>Produkt</th><th>Kategorie</th><th style="text-align:center;min-width:140px">Prodáno (ks)</th><th style="text-align:right">Výnos</th></tr></thead>
+          <thead><tr><th>Produkt</th><th>Kategorie</th><th style="text-align:center;min-width:120px">Podíl</th><th style="text-align:center">Ks</th><th style="text-align:right">Náklady</th><th style="text-align:right">Výnos</th></tr></thead>
           <tbody id="salesTableBody"></tbody>
         </table>
       </div>
@@ -7699,15 +7699,17 @@ function _renderSalesTable(){
   }
   body.innerHTML=allSales.map(({p,qty,rev})=>{
     const barPct=totalKs>0?Math.round(qty/totalKs*100):0;
+    const unitCost=(p.productCost||0)+(p.packagingCost||0);
+    const hasCost=unitCost>0;
+    const totalCost=hasCost?qty*unitCost:null;
     return '<tr>'
       +'<td><strong>'+escapeHtml(p.name)+'</strong></td>'
       +'<td style="font-size:12px;color:var(--muted)">'+escapeHtml(getCategoryLabel(p.category)||p.category||'\u2014')+'</td>'
-      +'<td style="text-align:center"><div style="display:flex;align-items:center;gap:8px">'
-      +'<div style="flex:1;background:#222;height:6px;border-radius:3px;overflow:hidden">'
-      +'<div style="background:'+(qty>0?'var(--green)':'#333')+';height:100%;width:'+barPct+'%"></div></div>'
-      +'<span style="font-family:Arial,sans-serif;font-size:14px;font-weight:700;min-width:40px;text-align:right;color:'+(qty>0?'#fff':'var(--muted)')+'">'+qty+'</span>'
-      +'</div></td>'
-      +'<td style="text-align:right;font-family:monospace;font-size:13px;font-weight:700;color:'+(qty>0?'var(--green-glow)':'var(--muted)')+'">'+( qty>0?formatPrice(rev)+' Kč':'—')+'</td>'
+      +'<td style="padding:8px 12px"><div style="background:#333;height:6px;border-radius:3px;overflow:hidden">'
+      +'<div style="background:'+(qty>0?'var(--green)':'#444')+';height:100%;width:'+barPct+'%"></div></div></td>'
+      +'<td style="text-align:center;font-weight:700;font-size:14px;color:'+(qty>0?'var(--green-glow)':'var(--muted)')+'">'+qty+'</td>'
+      +'<td style="text-align:right;font-size:13px;color:'+(totalCost!==null?(qty>0?'#ff8a65':'var(--muted)'):'var(--muted)')+'">'+( totalCost!==null&&qty>0?formatPrice(Math.round(totalCost))+' K\u010d':'\u2014')+'</td>'
+      +'<td style="text-align:right;font-family:monospace;font-size:13px;font-weight:700;color:'+(qty>0?'var(--green-glow)':'var(--muted)')+'">'+( qty>0?formatPrice(rev)+' K\u010d':'\u2014')+'</td>'
       +'</tr>';
   }).join('');
 }
