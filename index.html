@@ -8520,7 +8520,7 @@ tr.total td{background:#f0f0f0;font-weight:700;font-size:15px;border-top:2px sol
 .note{background:#fff3cd;border:1px solid #ffe082;padding:14px;margin:20px 0;font-size:12px;line-height:1.6}
 .foot{margin-top:40px;padding-top:20px;border-top:1px solid #ddd;text-align:center;color:#666;font-size:11px}
 .barcode{text-align:center;margin:20px 0;font-family:monospace;font-size:20px;letter-spacing:3px;background:#000;color:#fff;padding:10px}
-@media print{body{padding:10mm}.no-print{display:none}}
+@media print{body{padding:10mm}.no-print{display:none!important}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 .print-btn{position:fixed;top:20px;right:20px;background:#008a3f;color:#fff;border:none;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;border-radius:4px}
 .close-btn{position:fixed;top:20px;right:160px;background:#666;color:#fff;border:none;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;border-radius:4px}
 </style></head><body>
@@ -8601,43 +8601,19 @@ ${o.adminNote?`<div class="note">📝 <strong>Interní poznámka:</strong> ${esc
 </div>
 </body></html>`;
 
-  // Stažení jako PDF přes html2pdf.js
-  showToast('⏳ Generuji PDF...');
-  // Vytvořit overlay s obsahem — musí být viditelný aby html2canvas změřil výšku
-  let _pdfDiv=document.getElementById('_pdf_render_div');
-  if(_pdfDiv) _pdfDiv.remove();
-  _pdfDiv=document.createElement('div');
-  _pdfDiv.id='_pdf_render_div';
-  _pdfDiv.style.cssText='position:fixed;left:0;top:0;width:794px;min-height:100px;background:#fff;z-index:99999;overflow:auto;';
-  // Extrahovat jen obsah body z HTML stringu
-  const _bodyMatch=html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-  _pdfDiv.innerHTML=_bodyMatch?_bodyMatch[1]:html;
-  document.body.appendChild(_pdfDiv);
-  // Načíst html2pdf.js pokud ještě není
-  function _doGenPDF(){
-    html2pdf().set({
-      margin:10,
-      filename:'dodaci-list-'+orderId+'.pdf',
-      image:{type:'jpeg',quality:0.98},
-      html2canvas:{scale:2,useCORS:true,allowTaint:true,scrollY:0},
-      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
-    }).from(_pdfDiv).save().then(()=>{
-      _pdfDiv.remove();
-      showToast('✅ PDF staženo');
-    }).catch(()=>{
-      _pdfDiv.remove();
-      showToast('❌ Chyba při generování PDF','error');
-    });
+  // Stažení jako PDF — otevřít v novém okně, uložit přes prohlížeč jako PDF
+  showToast('⏳ Připravuji dodací list...');
+  function _openPrintWindow(){
+    const w = window.open('', '_blank', 'width=900,height=700');
+    if(!w){showToast('Povol vyskakovací okna v prohlížeči','error');return;}
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(()=>{
+      w.print();
+    }, 800);
   }
-  if(window.html2pdf){
-    _doGenPDF();
-  } else {
-    const s=document.createElement('script');
-    s.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js';
-    s.onload=_doGenPDF;
-    s.onerror=()=>showToast('❌ Nepodařilo se načíst PDF knihovnu','error');
-    document.head.appendChild(s);
-  }
+  _openPrintWindow();
 }
 
 window.copyForIdoklad=function(orderId){
