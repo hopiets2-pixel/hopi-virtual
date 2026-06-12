@@ -8603,12 +8603,12 @@ ${o.adminNote?`<div class="note">📝 <strong>Interní poznámka:</strong> ${esc
 
   // Stažení jako PDF přes html2pdf.js
   showToast('⏳ Generuji PDF...');
-  // Vytvořit dočasný div s obsahem
+  // Vytvořit overlay s obsahem — musí být viditelný aby html2canvas změřil výšku
   let _pdfDiv=document.getElementById('_pdf_render_div');
   if(_pdfDiv) _pdfDiv.remove();
   _pdfDiv=document.createElement('div');
   _pdfDiv.id='_pdf_render_div';
-  _pdfDiv.style.cssText='position:fixed;left:0;top:0;width:210mm;background:#fff;z-index:-9999;opacity:0;pointer-events:none;';
+  _pdfDiv.style.cssText='position:fixed;left:0;top:0;width:794px;min-height:100px;background:#fff;z-index:99999;overflow:auto;';
   // Extrahovat jen obsah body z HTML stringu
   const _bodyMatch=html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
   _pdfDiv.innerHTML=_bodyMatch?_bodyMatch[1]:html;
@@ -8619,7 +8619,7 @@ ${o.adminNote?`<div class="note">📝 <strong>Interní poznámka:</strong> ${esc
       margin:10,
       filename:'dodaci-list-'+orderId+'.pdf',
       image:{type:'jpeg',quality:0.98},
-      html2canvas:{scale:2,useCORS:true,allowTaint:true,windowWidth:794},
+      html2canvas:{scale:2,useCORS:true,allowTaint:true,scrollY:0},
       jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
     }).from(_pdfDiv).save().then(()=>{
       _pdfDiv.remove();
