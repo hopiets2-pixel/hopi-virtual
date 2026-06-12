@@ -8608,7 +8608,7 @@ ${o.adminNote?`<div class="note">📝 <strong>Interní poznámka:</strong> ${esc
   if(_pdfDiv) _pdfDiv.remove();
   _pdfDiv=document.createElement('div');
   _pdfDiv.id='_pdf_render_div';
-  _pdfDiv.style.cssText='position:fixed;left:-9999px;top:0;width:210mm;background:#fff;z-index:-1;';
+  _pdfDiv.style.cssText='position:fixed;left:0;top:0;width:210mm;background:#fff;z-index:-9999;opacity:0;pointer-events:none;';
   // Extrahovat jen obsah body z HTML stringu
   const _bodyMatch=html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
   _pdfDiv.innerHTML=_bodyMatch?_bodyMatch[1]:html;
@@ -8619,9 +8619,9 @@ ${o.adminNote?`<div class="note">📝 <strong>Interní poznámka:</strong> ${esc
       margin:10,
       filename:'dodaci-list-'+orderId+'.pdf',
       image:{type:'jpeg',quality:0.98},
-      html2canvas:{scale:2,useCORS:true},
+      html2canvas:{scale:2,useCORS:true,allowTaint:true,windowWidth:794},
       jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
-    }).from(_pdfDiv.querySelector('body')||_pdfDiv).save().then(()=>{
+    }).from(_pdfDiv).save().then(()=>{
       _pdfDiv.remove();
       showToast('✅ PDF staženo');
     }).catch(()=>{
