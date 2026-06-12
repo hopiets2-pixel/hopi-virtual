@@ -1053,6 +1053,7 @@ async function notifyAdmin(type, order=null){
     // Respektovat checkboxy z admin panelu (Notifikace)
     if(notif){
       if(type==='new_order' && notif.notifyOnNew===false) return {ok:false,skipped:true};
+      if(type==='new_order_paid' && notif.notifyOnNew===false && notif.notifyOnPaid===false) return {ok:false,skipped:true};
       if(type==='payment_received' && notif.notifyOnPaid===false) return {ok:false,skipped:true};
       if(type==='order_shipped' && notif.notifyOnShipped===false) return {ok:false,skipped:true};
     }
@@ -1064,6 +1065,8 @@ async function notifyAdmin(type, order=null){
         const p = products.find(x=>x.id===i.productId);
         return { name: p?.name || ('Produkt #'+i.productId), quantity: i.qty, size: i.size||'' };
       });
+      // Pro new_order_paid zobrazit kombinovanou zprávu
+      if(type==='new_order_paid') type='new_order_paid';
       const payMap = { cod:'Dobírka', transfer:'Bankovní převod', card:'Platební karta', applepay:'Apple Pay', googlepay:'Google Pay' };
       const shipMap = { zasilkovna:'Zásilkovna výdejní místo', zasilkovna_address:'Zásilkovna na adresu', ppl:'PPL k ruce', kuryr:'Kurýr' };
       payload.order = {
@@ -4127,11 +4130,8 @@ async function handleGoPayReturn(){
     if(data.state === 'PAID' || data.state === 'AUTHORIZED'){
       // ✅ Úspěšná platba — uložit do Supabase + Packeta zásilka
       if(lastOrder && _supabaseReady) saveOrderToSupabase(lastOrder);
-      // 🔔 Admin notifikace — nová objednávka + přijatá platba
-      if(lastOrder){
-        notifyAdmin('new_order', lastOrder).catch(()=>{});
-        notifyAdmin('payment_received', lastOrder).catch(()=>{});
-      }
+      // 🔔 Admin notifikace — jedna zpráva: nová objednávka + platba přijata
+      if(lastOrder) notifyAdmin('new_order_paid', lastOrder).catch(()=>{});
       // 🎟️ Inkrementovat použití slevového kódu
       if(lastOrder && lastOrder.promo){
         const promos=getPromos();
@@ -8600,10 +8600,11 @@ ${o.adminNote?`<div class="note">📝 <strong>Interní poznámka:</strong> ${esc
 </div>
 </body></html>`;
 
-  const w=window.open('','_blank');
-  if(!w){showToast('Povolit vyskakovací okna v prohlížeči','error');return}
-  w.document.write(html);
-  w.document.close();
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const w=window.open(url,'_blank');
+  if(!w){showToast('Povolit vyskakovací okna v prohlížeči','error');URL.revokeObjectURL(url);return}
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
   showToast('🖨️ Dodací list otevřen v novém okně');
 }
 
