@@ -8633,7 +8633,7 @@ ${o.adminNote?`<div class="note">📝 <strong>Interní poznámka:</strong> ${esc
     _doGenPDF();
   } else {
     const s=document.createElement('script');
-    s.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js';
     s.onload=_doGenPDF;
     s.onerror=()=>showToast('❌ Nepodařilo se načíst PDF knihovnu','error');
     document.head.appendChild(s);
