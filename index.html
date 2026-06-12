@@ -8522,8 +8522,9 @@ tr.total td{background:#f0f0f0;font-weight:700;font-size:15px;border-top:2px sol
 .barcode{text-align:center;margin:20px 0;font-family:monospace;font-size:20px;letter-spacing:3px;background:#000;color:#fff;padding:10px}
 @media print{body{padding:10mm}.no-print{display:none}}
 .print-btn{position:fixed;top:20px;right:20px;background:#008a3f;color:#fff;border:none;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;border-radius:4px}
+.close-btn{position:fixed;top:20px;right:160px;background:#666;color:#fff;border:none;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;border-radius:4px}
 </style></head><body>
-<button class="no-print print-btn" onclick="window.print()">🖨️ Vytisknout</button>
+
 
 <div class="head">
   <div>
@@ -8600,12 +8601,43 @@ ${o.adminNote?`<div class="note">📝 <strong>Interní poznámka:</strong> ${esc
 </div>
 </body></html>`;
 
-  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const w=window.open(url,'_blank');
-  if(!w){showToast('Povolit vyskakovací okna v prohlížeči','error');URL.revokeObjectURL(url);return}
-  setTimeout(()=>URL.revokeObjectURL(url),60000);
-  showToast('🖨️ Dodací list otevřen v novém okně');
+  // Stažení jako PDF přes html2pdf.js
+  showToast('⏳ Generuji PDF...');
+  // Vytvořit dočasný div s obsahem
+  let _pdfDiv=document.getElementById('_pdf_render_div');
+  if(_pdfDiv) _pdfDiv.remove();
+  _pdfDiv=document.createElement('div');
+  _pdfDiv.id='_pdf_render_div';
+  _pdfDiv.style.cssText='position:fixed;left:-9999px;top:0;width:210mm;background:#fff;z-index:-1;';
+  // Extrahovat jen obsah body z HTML stringu
+  const _bodyMatch=html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+  _pdfDiv.innerHTML=_bodyMatch?_bodyMatch[1]:html;
+  document.body.appendChild(_pdfDiv);
+  // Načíst html2pdf.js pokud ještě není
+  function _doGenPDF(){
+    html2pdf().set({
+      margin:10,
+      filename:'dodaci-list-'+orderId+'.pdf',
+      image:{type:'jpeg',quality:0.98},
+      html2canvas:{scale:2,useCORS:true},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
+    }).from(_pdfDiv.querySelector('body')||_pdfDiv).save().then(()=>{
+      _pdfDiv.remove();
+      showToast('✅ PDF staženo');
+    }).catch(()=>{
+      _pdfDiv.remove();
+      showToast('❌ Chyba při generování PDF','error');
+    });
+  }
+  if(window.html2pdf){
+    _doGenPDF();
+  } else {
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    s.onload=_doGenPDF;
+    s.onerror=()=>showToast('❌ Nepodařilo se načíst PDF knihovnu','error');
+    document.head.appendChild(s);
+  }
 }
 
 window.copyForIdoklad=function(orderId){
