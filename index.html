@@ -6254,6 +6254,7 @@ function viewOrderDetail(id){
             </div>
             <div style="margin-top:20px;padding-top:16px;border-top:2px solid #eee">
               <div class="detail-line"><span class="k">Mezisoučet</span><span>${formatPrice(o.subtotal||o.total)} Kč</span></div>
+              ${o.promo&&o.promo.discount>0?`<div class="detail-line"><span class="k" style="color:#2e7d32">Sleva ${o.promo.type==='percent'?'('+o.promo.code+' −'+o.promo.value+'%)':'('+o.promo.code+')'}</span><span style="color:#2e7d32">−${formatPrice(o.promo.discount)} Kč</span></div>`:''}
               ${o.shipPrice?`<div class="detail-line"><span class="k">Doprava</span><span>${formatPrice(o.shipPrice)} Kč</span></div>`:''}
               ${o.codFee?`<div class="detail-line"><span class="k">Dobírka</span><span>${formatPrice(o.codFee)} Kč</span></div>`:''}
               <div class="detail-line" style="padding-top:14px;border-top:1px solid #eee;margin-top:8px"><span class="k" style="color:#111;font-weight:700;font-size:13px">CELKEM</span><span style="font-family:'Archivo Black',sans-serif;font-size:24px">${formatPrice(o.total)} Kč</span></div>
@@ -8604,7 +8605,7 @@ ${o.invoice?`
         </tr>`;
       }).join('');
     })()}
-    ${o.promo&&o.promo.discount>0?`<tr><td colspan="4" style="color:#2e7d32">Sleva (${escapeHtml(o.promo.code)})</td><td class="price" style="color:#2e7d32">−${formatPrice(o.promo.discount)} Kč</td></tr>`:''}
+    ${o.promo&&o.promo.discount>0?`<tr><td colspan="4" style="color:#2e7d32">Sleva ${o.promo.type==='percent'?'('+escapeHtml(o.promo.code)+' −'+o.promo.value+'%)':'('+escapeHtml(o.promo.code)+')'}</td><td class="price" style="color:#2e7d32">−${formatPrice(o.promo.discount)} Kč</td></tr>`:''}
     ${o.shipPrice?`<tr><td colspan="4">Doprava</td><td class="price">${formatPrice(o.shipPrice)} Kč</td></tr>`:''}
     ${o.codFee?`<tr><td colspan="4">Poplatek za dobírku</td><td class="price">${formatPrice(o.codFee)} Kč</td></tr>`:''}
     <tr class="total"><td colspan="4">CELKEM K ÚHRADĚ</td><td class="price">${formatPrice(o.total)} Kč</td></tr>
