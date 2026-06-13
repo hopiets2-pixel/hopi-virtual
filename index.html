@@ -4132,6 +4132,8 @@ async function handleGoPayReturn(){
       if(lastOrder && _supabaseReady) saveOrderToSupabase(lastOrder);
       // 🔔 Admin notifikace — jedna zpráva: nová objednávka + platba přijata
       if(lastOrder) notifyAdmin('new_order_paid', lastOrder).catch(()=>{});
+      // 📊 Google Sheets sync
+      if(lastOrder) pushOrderToSheets(lastOrder).catch(()=>{});
       // 🎟️ Inkrementovat použití slevového kódu
       if(lastOrder && lastOrder.promo){
         const promos=getPromos();
