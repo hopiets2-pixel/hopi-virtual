@@ -6206,6 +6206,7 @@ function viewOrderDetail(id){
         <button class="abtn" onclick="adminOrderId=null;viewAdmin()">← Zpět na seznam</button>
         <button class="abtn" onclick="printPackingSlip('${o.id}')">🖨️ Tisknout dodací list</button>
         <button class="abtn" onclick="copyForIdoklad('${o.id}')">📋 Kopírovat pro iDoklad</button>
+        <button class="abtn" onclick="syncOrderToSheets('${o.id}')">📊 Sync do Sheets</button>
         ${o.invoiceNumber?`<span class="abtn" style="background:#e8f5e9;color:#2e7d32;border-color:#81c784;cursor:default">📄 Faktura ${escapeHtml(o.invoiceNumber)}</span>`:(o.status!=='cancelled'&&getInvoiceConfig().enabled?`<button class="abtn" onclick="issueInvoice('${o.id}')">📄 Vystavit fakturu</button>`:'')}
         ${s.next?`<button class="abtn abtn-primary" onclick="advanceStatus('${o.id}')">${s.nextLabel} →</button>`:''}
       </div>
@@ -8628,6 +8629,19 @@ ${o.adminNote?`<div class="note">📝 <strong>Interní poznámka:</strong> ${esc
     }, 800);
   }
   _openPrintWindow();
+}
+
+window.syncOrderToSheets=async function(orderId){
+  const orders=getOrders();
+  const o=orders.find(x=>x.id===orderId);
+  if(!o){showToast('Objednávka nenalezena','error');return}
+  showToast('⏳ Odesílám do Sheets...');
+  const result=await pushOrderToSheets(o);
+  if(result&&result.ok!==false){
+    showToast('✅ Objednávka odeslána do Sheets');
+  } else {
+    showToast('❌ Chyba při odesílání do Sheets','error');
+  }
 }
 
 window.copyForIdoklad=function(orderId){
