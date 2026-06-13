@@ -8590,21 +8590,17 @@ ${o.invoice?`
     <tr><th>Položka</th><th>Velikost</th><th class="qty">Ks</th><th class="price">Cena/ks</th><th class="price">Celkem</th></tr>
   </thead>
   <tbody>
-    ${(()=>{
-      const promoDisc=o.promo&&o.promo.type==='percent'?o.promo.value:0;
-      return o.items.map(i=>{
-        const p=products.find(x=>x.id===i.productId);
-        if(!p)return '';
-        const unitPrice=promoDisc>0?Math.round(p.price*(1-promoDisc/100)):p.price;
-        return `<tr>
-          <td><strong>${escapeHtml(p.name)}</strong></td>
-          <td>${escapeHtml(i.size||'—')}</td>
-          <td class="qty">${i.qty}</td>
-          <td class="price">${formatPrice(unitPrice)} Kč</td>
-          <td class="price">${formatPrice(unitPrice*i.qty)} Kč</td>
-        </tr>`;
-      }).join('');
-    })()}
+    ${o.items.map(i=>{
+      const p=products.find(x=>x.id===i.productId);
+      if(!p)return '';
+      return `<tr>
+        <td><strong>${escapeHtml(p.name)}</strong></td>
+        <td>${escapeHtml(i.size||'—')}</td>
+        <td class="qty">${i.qty}</td>
+        <td class="price">${formatPrice(p.price)} Kč</td>
+        <td class="price">${formatPrice(p.price*i.qty)} Kč</td>
+      </tr>`;
+    }).join('')}
     ${o.promo&&o.promo.discount>0?`<tr><td colspan="4" style="color:#2e7d32">Sleva ${o.promo.type==='percent'?'('+escapeHtml(o.promo.code)+' −'+o.promo.value+'%)':'('+escapeHtml(o.promo.code)+')'}</td><td class="price" style="color:#2e7d32">−${formatPrice(o.promo.discount)} Kč</td></tr>`:''}
     ${o.shipPrice?`<tr><td colspan="4">Doprava</td><td class="price">${formatPrice(o.shipPrice)} Kč</td></tr>`:''}
     ${o.codFee?`<tr><td colspan="4">Poplatek za dobírku</td><td class="price">${formatPrice(o.codFee)} Kč</td></tr>`:''}
