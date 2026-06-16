@@ -1946,7 +1946,8 @@ async function advanceOrderStatus(orderId){
   if(s.next==='shipped'){
     const invConfig=getInvoiceConfig();
 
-    // 1. Auto-vystavení faktury — AWAIT (musí proběhnout před emailem faktury)
+    // 1. Auto-vystavení faktury při odeslání — pouze pokud faktura ještě neexistuje
+    // (GoPay/Apple Pay/Google Pay mají fakturu z handleGoPayReturn, převod/dobírka z markAsPaid)
     if(invConfig.enabled&&invConfig.autoIssue&&!o.invoiceId){
       try{
         await issueInvoice(orderId,{silent:true});
@@ -6403,7 +6404,7 @@ window.saveOrderNote=function(id){
   showToast('Poznámka uložena');
 }
 
-window.markAsPaid=function(id){
+window.markAsPaid=async function(id){
   const orders=getOrders();
   const o=orders.find(x=>x.id===id);
   if(!o)return;
@@ -6413,6 +6414,16 @@ window.markAsPaid=function(id){
   updateOrderInSheets(id,{paymentStatus:'paid',paidAt:o.paidAt}).catch(()=>{});
   if(_supabaseReady) saveOrderToSupabase(o);
   showToast('✅ Objednávka označena jako zaplacená');
+  // 🧾 Auto-faktura při zaplacení (převod, dobírka) — NE pro GoPay (ty mají fakturu již z handleGoPayReturn)
+  if(o.pay!=='card'&&o.pay!=='applepay'&&o.pay!=='googlepay'){
+    const invConfig=getInvoiceConfig();
+    if(invConfig.enabled&&invConfig.autoIssue&&!o.invoiceId){
+      try{
+        await issueInvoice(id,{silent:true});
+        showToast('📄 Faktura automaticky vystavena');
+      }catch(e){console.warn('Auto-invoice markAsPaid error:',e);}
+    }
+  }
   viewAdmin();
 }
 
