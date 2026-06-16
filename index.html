@@ -2783,7 +2783,7 @@ window.addEventListener('load', async () => {
             if(found.promo){
               const promos = getPromos();
               const p = promos.find(x => x.code === found.promo.code);
-              if(p){ p.uses = (p.uses||0) + 1; setPromos(promos); }
+              if(p){ incrementPromoUses(p.code).catch(()=>{}); }
             }
             setCart([]);
             setAppliedPromo(null);
@@ -3752,7 +3752,7 @@ window.submitOrder=function(){
   if(appliedPromo){
     const promos=getPromos();
     const p=promos.find(x=>x.code===appliedPromo.code);
-    if(p){p.uses=(p.uses||0)+1;setPromos(promos)}
+    if(p){incrementPromoUses(p.code).catch(()=>{})}
   }
 
   saveOrder(order);
@@ -4149,7 +4149,7 @@ async function handleGoPayReturn(){
       if(lastOrder && lastOrder.promo){
         const promos=getPromos();
         const p=promos.find(x=>x.code===lastOrder.promo.code);
-        if(p){p.uses=(p.uses||0)+1;setPromos(promos);}
+        if(p){incrementPromoUses(p.code).catch(()=>{});}
       }
       // 📦 Odečíst sklad
       if(lastOrder){
@@ -9022,7 +9022,22 @@ function getPromos(){
 }
 function setPromos(p){
   localStorage.setItem('hopi_promos',JSON.stringify(p));
-  saveAppSetting('hopi_promos',p);
+  saveAppSetting('hopi_promos',p).catch(e=>console.warn('setPromos Supabase error:',e));
+}
+// ⭐ Inkrementovat uses slevového kódu přes Edge Function (obejde RLS)
+async function incrementPromoUses(code){
+  if(!code) return;
+  // Lokálně hned inkrementovat pro UI
+  const promos=getPromos();
+  const p=promos.find(x=>x.code===code);
+  if(p){p.uses=(p.uses||0)+1;localStorage.setItem('hopi_promos',JSON.stringify(promos));}
+  // Vzdáleně přes Edge Function (service role, obejde RLS)
+  try{
+    await supabaseClient.functions.invoke('increment-promo-uses',{body:{code}});
+    console.log('✅ Promo uses inkrementováno v Supabase:', code);
+  }catch(e){
+    console.warn('❌ increment-promo-uses error:', e);
+  }
 }
 function getNotifSettings(){
   const fromSupabase=getAppSetting('hopi_notif',null);
