@@ -2015,6 +2015,27 @@ async function advanceOrderStatus(orderId){
   });
 }
 
+// ⭐ Vrátit krok objednávky zpět (např. Zpracovává se → Přijato)
+// Nezasahuje do faktur, plateb ani skladu — jen vrací status a zapisuje do historie.
+const PREV_STATUS={'accepted':'new','processing':'accepted','shipped':'processing','delivered':'shipped'};
+function revertOrderStatus(orderId){
+  const orders=getOrders();
+  const o=orders.find(x=>x.id===orderId);
+  if(!o)return;
+  const prev=PREV_STATUS[o.status];
+  if(!prev)return;
+  if(!confirm(`Vrátit stav objednávky zpět na "${STATUSES[prev].label}"?`))return;
+  o.status=prev;
+  o.statusHistory=o.statusHistory||[];
+  o.statusHistory.push({status:prev,at:Date.now(),reverted:true});
+  setOrders(orders);
+  updateOrderInSheets(orderId,{status:prev,statusHistory:o.statusHistory}).catch(()=>{});
+  if(_supabaseReady) saveOrderToSupabase(o);
+  showToast(`↩️ Vráceno na: ${STATUSES[prev].label}`);
+  viewAdmin();
+}
+window.revertOrderStatus=revertOrderStatus;
+
 function cancelOrder(orderId){
   const orders=getOrders();
   const o=orders.find(x=>x.id===orderId);
@@ -6209,6 +6230,7 @@ function viewOrderDetail(id){
         <button class="abtn" onclick="copyForIdoklad('${o.id}')">📋 Kopírovat pro iDoklad</button>
         <button class="abtn" onclick="syncOrderToSheets('${o.id}')">📊 Sync do Sheets</button>
         ${o.invoiceNumber?`<span class="abtn" style="background:#e8f5e9;color:#2e7d32;border-color:#81c784;cursor:default">📄 Faktura ${escapeHtml(o.invoiceNumber)}</span>`:(o.status!=='cancelled'&&getInvoiceConfig().enabled?`<button class="abtn" onclick="issueInvoice('${o.id}')">📄 Vystavit fakturu</button>`:'')}
+        ${PREV_STATUS[o.status]?`<button class="abtn" onclick="revertOrderStatus('${o.id}')" title="Vrátit na: ${STATUSES[PREV_STATUS[o.status]].label}">↩️ Vrátit krok</button>`:''}
         ${s.next?`<button class="abtn abtn-primary" onclick="advanceStatus('${o.id}')">${s.nextLabel} →</button>`:''}
       </div>
     </div>
