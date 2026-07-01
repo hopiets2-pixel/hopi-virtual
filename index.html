@@ -1217,7 +1217,10 @@ async function deleteOrderFromSupabase(id){
   } catch(e){ return false; }
 }
 function getSettings(){return {...DEFAULT_SETTINGS,...JSON.parse(localStorage.getItem('hopi_settings')||'{}')}}
-function setSettings(s){localStorage.setItem('hopi_settings',JSON.stringify(s))}
+function setSettings(s){
+  localStorage.setItem('hopi_settings',JSON.stringify(s));
+  saveAppSetting('hopi_settings',s).catch(e=>console.warn('setSettings Supabase error:',e));
+}
 
 function cartCount(){return getCart().reduce((s,i)=>s+i.qty,0)}
 function cartTotal(){const products=getProducts();return getCart().reduce((s,i)=>{const p=products.find(x=>x.id===i.productId);return s+(p?p.price*i.qty:0)},0)}
