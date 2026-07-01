@@ -3421,8 +3421,17 @@ function getAppliedPromo(){return JSON.parse(sessionStorage.getItem('hopi_applie
 function setAppliedPromo(p){if(p)sessionStorage.setItem('hopi_applied_promo',JSON.stringify(p));else sessionStorage.removeItem('hopi_applied_promo')}
 function calcDiscount(promo,subtotal){
   if(!promo)return 0;
-  if(promo.type==='percent')return Math.round(subtotal*promo.value/100);
-  return Math.min(promo.value,subtotal);
+  let base=subtotal;
+  if(promo.excludedProducts&&promo.excludedProducts.length){
+    const products=getProducts();
+    base=getCart().reduce((s,item)=>{
+      if(promo.excludedProducts.includes(item.productId))return s;
+      const p=products.find(x=>x.id===item.productId);
+      return s+(p?p.price*item.qty:0);
+    },0);
+  }
+  if(promo.type==='percent')return Math.round(base*promo.value/100);
+  return Math.min(promo.value,base);
 }
 
 window.applyPromoCode=function(){
@@ -9123,7 +9132,7 @@ function viewMonetize(){
               <tr>
                 <td><code style="background:#f4f4f4;padding:4px 10px;font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--green);font-size:13px">${escapeHtml(p.code)}</code></td>
                 <td style="font-weight:700">${p.type==='percent'?p.value+' %':formatPrice(p.value)+' Kč'}</td>
-                <td style="font-size:12px;color:var(--muted)">${p.minAmount?'Od '+formatPrice(p.minAmount)+' Kč':'Bez limitu'}</td>
+                <td style="font-size:12px;color:var(--muted)">${p.minAmount?'Od '+formatPrice(p.minAmount)+' Kč':'Bez limitu'}${p.excludedProducts&&p.excludedProducts.length?`<br><span style="color:var(--red)">⛔ ${p.excludedProducts.length}× vyloučeno</span>`:''}</td>
                 <td>${p.uses||0}×${p.maxUses?' / '+p.maxUses:''}</td>
                 <td>${p.active?'<span class="status-badge" style="background:#e8f5e9;color:#2e7d32;border:1px solid #81c784">✓ Aktivní</span>':'<span class="status-badge" style="background:#f5f5f5;color:#666;border:1px solid #ccc">Vypnuto</span>'}</td>
                 <td style="text-align:right;white-space:nowrap">
@@ -9276,6 +9285,7 @@ window.addPromo=function(existingCode){
   let overlay=document.getElementById('promoModal');
   if(overlay)overlay.remove();
   const existing=existingCode?getPromos().find(p=>p.code===existingCode):null;
+  const promoProducts=getProducts();
 
   overlay=document.createElement('div');
   overlay.id='promoModal';
@@ -9331,6 +9341,19 @@ window.addPromo=function(existingCode){
           <div style="font-size:11px;color:#999;margin-top:4px">Kolikrát lze kód maximálně použít. Pro jednorázové kódy zadej 1.</div>
         </div>
 
+        <div style="margin-bottom:18px">
+          <label style="display:block;font-family:'JetBrains Mono',monospace;font-size:11px;color:#666;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;font-weight:700">Vyloučené produkty (volitelné)</label>
+          <div style="max-height:180px;overflow-y:auto;border:2px solid #ddd;padding:10px 14px">
+            ${promoProducts.length===0?'<div style="font-size:13px;color:#999">Zatím žádné produkty</div>':promoProducts.map(pr=>`
+              <label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px;cursor:pointer">
+                <input type="checkbox" class="promoExcludeProduct" value="${pr.id}" ${existing&&existing.excludedProducts&&existing.excludedProducts.includes(pr.id)?'checked':''} style="accent-color:var(--red)">
+                <span>${escapeHtml(pr.name)}</span>
+              </label>
+            `).join('')}
+          </div>
+          <div style="font-size:11px;color:#999;margin-top:4px">Zaškrtnuté produkty NEBUDOU touto slevou zvýhodněny (např. produkty s nízkou marží).</div>
+        </div>
+
         <div style="display:flex;gap:10px;margin-top:24px">
           <button onclick="document.getElementById('promoModal').remove()" class="abtn" style="flex:1">Zrušit</button>
           <button onclick="savePromoFromModal('${existing?existing.code:''}')" class="abtn abtn-primary" style="flex:2">💾 ${existing?'Uložit změny':'Vytvořit kód'}</button>
@@ -9376,6 +9399,7 @@ window.savePromoFromModal=function(existingCode){
   const minAmount=Number(document.getElementById('promoMin').value||0);
   const maxUsesRaw=document.getElementById('promoMaxUses').value;
   const maxUses=maxUsesRaw?Number(maxUsesRaw):null;
+  const excludedProducts=Array.from(document.querySelectorAll('.promoExcludeProduct:checked')).map(el=>Number(el.value));
 
   if(!code||code.length<3){showToast('❌ Kód musí mít alespoň 3 znaky','error');return}
   if(!value||value<=0){showToast('❌ Zadej platnou hodnotu slevy','error');return}
@@ -9388,11 +9412,11 @@ window.savePromoFromModal=function(existingCode){
   if(existingCode){
     const p=promos.find(x=>x.code===existingCode);
     if(p){
-      p.type=type;p.value=value;p.minAmount=minAmount;p.maxUses=maxUses;
+      p.type=type;p.value=value;p.minAmount=minAmount;p.maxUses=maxUses;p.excludedProducts=excludedProducts;
     }
   }else{
     promos.push({
-      code,type,value,minAmount,maxUses,
+      code,type,value,minAmount,maxUses,excludedProducts,
       active:true,uses:0,createdAt:Date.now(),
     });
   }
