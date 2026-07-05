@@ -1068,7 +1068,7 @@ async function notifyAdmin(type, order=null){
       // Pro new_order_paid zobrazit kombinovanou zprávu
       if(type==='new_order_paid') type='new_order_paid';
       const payMap = { cod:'Dobírka', transfer:'Bankovní převod', card:'Platební karta', applepay:'Apple Pay', googlepay:'Google Pay' };
-      const shipMap = { zasilkovna:'Zásilkovna výdejní místo', zasilkovna_address:'Zásilkovna na adresu', ppl:'PPL k ruce', kuryr:'Kurýr' };
+      const shipMap = { zasilkovna:'Zásilkovna výdejní místo', zasilkovna_address:'Zásilkovna na adresu', balikovna:'Balíkovna', ppl:'PPL k ruce', kuryr:'Kurýr' };
       payload.order = {
         id: order.id,
         customer_name: ((order.customer?.firstName||'')+' '+(order.customer?.lastName||'')).trim(),
@@ -1634,7 +1634,7 @@ function addEmailLog(entry){
 function fillTemplate(text,order){
   const s=getSettings();
   const payL={card:'Platební karta',applepay:'Apple Pay',googlepay:'Google Pay',transfer:'Bankovní převod',cod:'Dobírka'}[order.pay]||order.pay;
-  const shipL={zasilkovna:'Zásilkovna',zasilkovna_address:'Zásilkovna na adresu',ppl:'PPL k ruce',kuryr:'Expresní kurýr'}[order.ship]||order.ship;
+  const shipL={zasilkovna:'Zásilkovna',zasilkovna_address:'Zásilkovna na adresu',balikovna:'Balíkovna',ppl:'PPL k ruce',kuryr:'Expresní kurýr'}[order.ship]||order.ship;
   const statusLabel=STATUSES[order.status||'new'].label;
   // Platební instrukce podle typu platby
   const vs=(order.id||'').replace(/\D/g,''); // variabilní symbol = jen čísla z ID
@@ -3534,6 +3534,7 @@ function viewCheckout(){
               </button>
               <div id="packetaHint" style="font-size:11px;color:var(--muted);margin-top:8px;font-family:'JetBrains Mono',monospace">Přes 8 000 poboček a Z-BOXů po celé ČR</div>
             </div>
+            ${(()=>{const sc=getShippingConfig();if(!sc.balikovnaEnabled)return '';const bBase=sc.balikovnaPrice!=null?sc.balikovnaPrice:79;const bPrice=subtotal>=freeOver?0:bBase;return `<label class="option" id="balikovnaOption" data-ship="balikovna" data-price="${bPrice}"><input type="radio" name="ship" onchange="toggleZasilkovna()"><div class="option-text" style="display:flex;align-items:center;gap:12px"><span style="background:#fff;padding:6px 8px;border-radius:3px;flex-shrink:0;line-height:0">${balikovnaLogoSVG(30)}</span><span style="line-height:1.4">Vyberte si box nebo výdejní místo, které vám vyhovuje — Balíkovna je všude! · obvykle následující pracovní den</span></div><div class="option-price" id="balikovnaOptionPrice">${bPrice===0?'Zdarma':formatPrice(bBase)+' Kč'}</div></label><div id="balikovnaPicker" style="display:none;margin:-6px 0 10px 0;padding:14px 16px;background:rgba(0,138,63,0.05);border:1px solid rgba(0,138,63,0.2)"><label style="display:block;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green-glow);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px">📍 Vyber Balíkovnu</label><div id="balikovnaBranchSelected" style="display:none;margin-bottom:10px;padding:10px 12px;background:rgba(0,138,63,0.1);border:1px solid rgba(0,200,83,0.35);align-items:center;gap:10px"><span style="font-size:18px;flex-shrink:0">📍</span><div style="flex:1;min-width:0"><div id="balikovnaBranchName" style="font-size:14px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div><div id="balikovnaBranchZip" style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px"></div></div><span style="color:var(--green-glow);font-size:18px;flex-shrink:0">✓</span></div><button type="button" class="btn btn-outline btn-sm" id="balikovnaPickBtn" onclick="openBalikovnaModal()" style="gap:8px">🗺️ Zvolit Balíkovnu</button><div style="font-size:11px;color:var(--muted);margin-top:8px;font-family:'JetBrains Mono',monospace">Přes 9 000 výdejních míst, poboček a boxů po celé ČR</div></div>`;})()}
             ${(()=>{const sc=getShippingConfig();if(!sc.zasilkovnaAddressEnabled)return '';const addrBase=sc.zasilkovnaAddressPrice!=null?sc.zasilkovnaAddressPrice:99;const addrPrice=subtotal>=freeOver?0:addrBase;return `<label class="option" id="zasilkovnaAddressOption" data-ship="zasilkovna_address" data-price="${addrPrice}"><input type="radio" name="ship" onchange="toggleZasilkovna()"><div class="option-text"><strong>Zásilkovna na adresu</strong><span>Doručení přímo k tobě · 1–2 pracovní dny</span></div><div class="option-price" id="zasilkovnaAddressOptionPrice">${addrPrice===0?'Zdarma':formatPrice(addrBase)+' Kč'}</div></label><div id="zasilkovnaAddressPicker" style="display:none;margin:-6px 0 10px 0;padding:14px 16px;background:rgba(0,138,63,0.05);border:1px solid rgba(0,138,63,0.2)"><label style="display:block;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green-glow);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px">🏠 Adresa doručení</label><div class="form-row-2" style="margin-bottom:12px"><div class="form-group" style="margin:0"><label class="form-label">Ulice a č.p.</label><input type="text" class="form-input" id="daStreet" placeholder="Hlavní 123"></div><div class="form-group" style="margin:0"><label class="form-label">Město</label><input type="text" class="form-input" id="daCity" placeholder="Praha"></div></div><div class="form-row-2"><div class="form-group" style="margin:0"><label class="form-label">PSČ</label><input type="text" class="form-input" id="daZip" placeholder="110 00" maxlength="6"></div><div class="form-group" style="margin:0"><label class="form-label">Stát</label><select class="form-select" id="daCountry"><option value="CZ">Česká republika</option><option value="SK">Slovensko</option></select></div></div></div>`;})()}
             ${(()=>{const sc=getShippingConfig();return sc.pplEnabled?`<label class="option" data-ship="ppl" data-price="${subtotal>=freeOver?0:99}"><input type="radio" name="ship" onchange="toggleZasilkovna()"><div class="option-text"><strong>PPL k ruce</strong><span>1–2 dny · přímo na adresu</span></div><div class="option-price">${subtotal>=freeOver?'Zdarma':'99 Kč'}</div></label>`:''})()}
             ${(()=>{const sc=getShippingConfig();return sc.kuryrEnabled?`<label class="option" data-ship="kuryr" data-price="149"><input type="radio" name="ship" onchange="toggleZasilkovna()"><div class="option-text"><strong>Kurýr (Praha)</strong><span>Dnes do 3 h</span></div><div class="option-price">149 Kč</div></label>`:''})()}
@@ -3564,26 +3565,84 @@ function viewCheckout(){
 
   document.querySelectorAll('.option').forEach(opt=>opt.addEventListener('click',()=>{
     const name=opt.querySelector('input').name;
+    if(opt.querySelector('input').disabled)return;
     document.querySelectorAll(`.option input[name="${name}"]`).forEach(i=>i.closest('.option').classList.remove('selected'));
     opt.classList.add('selected');
     opt.querySelector('input').checked=true;
-    const sh=document.querySelector('.option[data-ship].selected');
-    const ship=sh?Number(sh.dataset.price):0;
-    const cod=document.querySelector('.option[data-pay="cod"]').classList.contains('selected')?39:0;
-    const ap=getAppliedPromo();
-    const disc=calcDiscount(ap,cartTotal());
-    document.getElementById('sumShip').innerText=ship===0?'Zdarma':formatPrice(ship)+' Kč';
-    document.getElementById('codRow').style.display=cod?'flex':'none';
-    document.getElementById('sumTotal').innerText=formatPrice(Math.max(0,cartTotal()-disc)+ship+cod)+' Kč';
+    recalcCheckoutTotals();
     toggleZasilkovna();
   }));
   toggleZasilkovna();
+}
+
+function recalcCheckoutTotals(){
+  const sh=document.querySelector('.option[data-ship].selected');
+  const ship=sh?Number(sh.dataset.price):0;
+  const cod=document.querySelector('.option[data-pay="cod"]')?.classList.contains('selected')?39:0;
+  const ap=getAppliedPromo();
+  const disc=calcDiscount(ap,cartTotal());
+  document.getElementById('sumShip').innerText=ship===0?'Zdarma':formatPrice(ship)+' Kč';
+  document.getElementById('codRow').style.display=cod?'flex':'none';
+  document.getElementById('sumTotal').innerText=formatPrice(Math.max(0,cartTotal()-disc)+ship+cod)+' Kč';
+}
+
+// ===== BALÍKOVNA LOGO (oficiální inline SVG "Balíkovna_E-shopy_RGB", žádné base64) =====
+function balikovnaLogoSVG(height){
+  const h=height||28;
+  const w=(h*119.5/92.7).toFixed(1);
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 119.5 92.7" height="${h}" width="${w}" role="img" aria-label="Balíkovna" style="display:block">
+<style type="text/css">.bk-st0{fill:#FFFFFF;}.bk-st1{fill:#00A9E0;}.bk-st2{fill:#002776;}.bk-st3{fill:#FDDB00;}</style>
+<rect x="0.1" y="0" class="bk-st0" width="119.5" height="92.9"/>
+<g>
+	<rect x="61.8" y="38.3" class="bk-st1" width="17" height="17"/>
+	<rect x="40.6" y="38.3" class="bk-st2" width="17" height="17"/>
+	<rect x="61.8" y="17.1" class="bk-st3" width="17" height="17"/>
+</g>
+<g>
+	<path class="bk-st2" d="M17,61h5.1c1.1,0,2,0.1,2.6,0.3c0.7,0.2,1.2,0.5,1.6,0.8c0.4,0.4,0.7,0.8,0.8,1.2c0.2,0.5,0.2,1,0.2,1.5
+		c0,0.6-0.1,1.2-0.4,1.7s-0.8,1-1.5,1.3c0.5,0.2,0.9,0.4,1.2,0.7c0.3,0.3,0.5,0.5,0.7,0.8s0.3,0.6,0.4,0.9s0.1,0.7,0.1,1
+		c0,0.6-0.1,1.2-0.3,1.7c-0.2,0.5-0.5,1-0.9,1.4s-1,0.7-1.7,0.9c-0.7,0.2-1.5,0.3-2.5,0.3H17V61z M22.4,67c1,0,1.7-0.2,2-0.5
+		c0.4-0.4,0.6-0.9,0.6-1.5c0-0.7-0.2-1.2-0.7-1.5C23.9,63.1,23.1,63,22,63h-2.6v4H22.4z M22.4,73.7c0.6,0,1.1-0.1,1.5-0.2
+		s0.7-0.3,0.9-0.5c0.2-0.2,0.4-0.5,0.5-0.7c0.1-0.3,0.1-0.6,0.1-1c0-0.7-0.2-1.3-0.6-1.7c-0.4-0.4-1.1-0.6-2.2-0.6h-3.2v4.6
+		L22.4,73.7L22.4,73.7z"/>
+	<path class="bk-st2" d="M36.2,74.3c-0.4,0.5-0.9,0.9-1.4,1.2c-0.6,0.3-1.3,0.5-2.1,0.5c-0.5,0-1-0.1-1.4-0.2s-0.8-0.3-1.1-0.6
+		c-0.3-0.3-0.6-0.6-0.8-1c-0.2-0.4-0.3-0.9-0.3-1.4c0-0.7,0.2-1.3,0.5-1.8s0.7-0.8,1.3-1.1c0.5-0.3,1.1-0.4,1.8-0.5s1.3-0.2,2-0.2
+		l1.6-0.1v-0.5c0-0.8-0.2-1.3-0.6-1.7c-0.4-0.3-0.9-0.5-1.6-0.5c-0.7,0-1.3,0.1-1.6,0.4c-0.4,0.2-0.6,0.6-0.7,1.1l-2.1-0.2
+		c0.2-1,0.7-1.8,1.4-2.3c0.8-0.5,1.8-0.7,3.1-0.7c0.8,0,1.5,0.1,2,0.3c0.6,0.2,1,0.5,1.3,0.8c0.3,0.4,0.6,0.8,0.7,1.3
+		c0.2,0.5,0.2,1.1,0.2,1.7v6.9h-2.3L36.2,74.3L36.2,74.3z M36.1,70.6l-1.5,0.1c-0.7,0-1.2,0.1-1.6,0.2c-0.4,0.1-0.8,0.2-1,0.4
+		c-0.2,0.2-0.4,0.4-0.5,0.6s-0.1,0.5-0.1,0.8c0,0.5,0.1,0.8,0.4,1.1c0.3,0.3,0.7,0.4,1.3,0.4c0.9,0,1.6-0.2,2.2-0.7
+		c0.6-0.4,0.8-1.1,0.8-2V70.6z"/>
+	<path class="bk-st2" d="M40.5,61h2.4v14.7h-2.4V61z"/>
+	<path class="bk-st2" d="M46.2,61h2.6l-1.9,2.9H45L46.2,61z M45,65h2.4v10.7H45V65z"/>
+	<path class="bk-st2" d="M49.6,61H52v8.2l4.6-4.2h2.7l-3.9,3.7l4.2,7.1H57L53.7,70l-1.8,1.6v4.2h-2.4L49.6,61L49.6,61z"/>
+	<path class="bk-st2" d="M64.7,76c-1.7,0-3-0.5-3.9-1.5s-1.4-2.4-1.4-4.2c0-0.9,0.1-1.7,0.4-2.4c0.2-0.7,0.6-1.3,1.1-1.8s1-0.9,1.7-1.1
+		c0.7-0.3,1.4-0.4,2.2-0.4c0.8,0,1.6,0.1,2.2,0.4s1.2,0.6,1.7,1.1s0.8,1.1,1,1.8c0.2,0.7,0.4,1.5,0.4,2.4S70,72,69.7,72.7
+		c-0.2,0.7-0.6,1.3-1.1,1.8s-1,0.9-1.7,1.1C66.2,75.9,65.5,76,64.7,76z M64.7,74.1c1,0,1.7-0.3,2.2-1s0.7-1.6,0.7-2.8
+		c0-1.2-0.2-2.1-0.7-2.8c-0.5-0.7-1.2-1-2.2-1s-1.7,0.3-2.2,1s-0.7,1.6-0.7,2.8c0,1.2,0.2,2.1,0.7,2.8C63,73.8,63.7,74.1,64.7,74.1z
+		"/>
+	<path class="bk-st2" d="M70,65h2.7l2.8,8.1l2.8-8.1h2.6l-4.3,10.7h-2.4L70,65z"/>
+	<path class="bk-st2" d="M82.1,65h2.3v1.6c0.5-0.7,1-1.1,1.6-1.4s1.2-0.5,1.9-0.5c2.4,0,3.6,1.3,3.6,4v7.1h-2.4V69
+		c0-0.9-0.2-1.5-0.5-1.8s-0.8-0.5-1.4-0.5c-0.7,0-1.4,0.3-2,0.8c-0.3,0.2-0.5,0.5-0.6,0.8s-0.2,0.7-0.2,1.1v6.4H82L82.1,65L82.1,65z
+		"/>
+	<path class="bk-st2" d="M100.1,74.3c-0.4,0.5-0.9,0.9-1.4,1.2c-0.6,0.3-1.3,0.5-2.1,0.5c-0.5,0-1-0.1-1.4-0.2s-0.8-0.3-1.1-0.6
+		c-0.3-0.3-0.6-0.6-0.8-1c-0.2-0.4-0.3-0.9-0.3-1.4c0-0.7,0.2-1.3,0.5-1.8s0.7-0.8,1.3-1.1c0.5-0.3,1.1-0.4,1.8-0.5
+		c0.7-0.1,1.3-0.2,2-0.2L100,69v-0.5c0-0.8-0.2-1.3-0.6-1.7c-0.4-0.3-0.9-0.5-1.6-0.5s-1.3,0.1-1.6,0.4c-0.4,0.2-0.6,0.6-0.7,1.1
+		l-2.1-0.2c0.2-1,0.7-1.8,1.4-2.3c0.8-0.5,1.8-0.7,3.1-0.7c0.8,0,1.5,0.1,2,0.3c0.6,0.2,1,0.5,1.3,0.8c0.3,0.4,0.6,0.8,0.7,1.3
+		c0.2,0.5,0.2,1.1,0.2,1.7v6.9h-2.3v-1.3H100.1z M100,70.6l-1.5,0.1c-0.7,0-1.2,0.1-1.6,0.2s-0.8,0.2-1,0.4
+		c-0.2,0.2-0.4,0.4-0.5,0.6s-0.1,0.5-0.1,0.8c0,0.5,0.1,0.8,0.4,1.1c0.3,0.3,0.7,0.4,1.3,0.4c0.9,0,1.6-0.2,2.2-0.7
+		c0.6-0.4,0.8-1.1,0.8-2C100,71.5,100,70.6,100,70.6z"/>
+</g>
+</svg>`;
 }
 
 // ===== PACKETA STATE =====
 let _packetaPointId='';
 let _packetaPointName='';
 let _packetaCountry='cz'; // aktuální země doručení pro Packeta widget
+// ===== BALÍKOVNA STATE =====
+let _balikovnaPointId='';
+let _balikovnaPointName='';
+let _balikovnaZip='';
 
 window.toggleZasilkovna=function(){
   const picker=document.getElementById('zasilkovnaPicker');
@@ -3598,6 +3657,50 @@ window.toggleZasilkovna=function(){
     const isAddr=document.querySelector('.option[data-ship="zasilkovna_address"]')?.classList.contains('selected');
     addrPicker.style.display=isAddr?'block':'none';
   }
+  // Balíkovna — zobrazit / skrýt picker
+  const balPicker=document.getElementById('balikovnaPicker');
+  let isBal=false;
+  if(balPicker){
+    isBal=document.querySelector('.option[data-ship="balikovna"]')?.classList.contains('selected');
+    balPicker.style.display=isBal?'block':'none';
+    if(!isBal){_balikovnaPointId='';_balikovnaPointName='';_balikovnaZip='';_balikovnaResetUI();}
+  }
+
+  // Balíkovna zatím nemá smlouvu s Českou poštou → dobírka touto cestou nejde odeslat
+  const codOpt=document.getElementById('codPayOption');
+  const codHint=document.getElementById('codBalikovnaHint');
+  if(codOpt){
+    const codInput=codOpt.querySelector('input');
+    if(isBal){
+      codOpt.style.opacity='0.45';
+      codOpt.style.cursor='not-allowed';
+      if(codInput)codInput.disabled=true;
+      if(codHint)codHint.style.display='inline';
+      if(codOpt.classList.contains('selected')){
+        codOpt.classList.remove('selected');
+        if(codInput)codInput.checked=false;
+        const otherPay=document.querySelector('.option[data-pay]:not(#codPayOption)');
+        if(otherPay){
+          otherPay.classList.add('selected');
+          otherPay.querySelector('input').checked=true;
+        }
+        showToast('❌ Dobírka není u Balíkovny možná — vybrána jiná platba','error');
+        recalcCheckoutTotals();
+      }
+    }else{
+      codOpt.style.opacity='';
+      codOpt.style.cursor='';
+      if(codInput)codInput.disabled=false;
+      if(codHint)codHint.style.display='none';
+    }
+  }
+}
+
+function _balikovnaResetUI(){
+  const sel=document.getElementById('balikovnaBranchSelected');
+  const btn=document.getElementById('balikovnaPickBtn');
+  if(sel)sel.style.display='none';
+  if(btn)btn.textContent='🗺️ Zvolit Balíkovnu';
 }
 
 function _packetaResetUI(){
@@ -3686,6 +3789,51 @@ window.openPacketaWidgetCheckout=function(){
   }else{doOpen();}
 }
 
+// ===== BALÍKOVNA MODAL (iframe České pošty) =====
+window.openBalikovnaModal=function(){
+  // Telefon je v checkoutu povinné pole → parametr PHONE se dle manuálu NEUVÁDÍ
+  const src='https://b2c.cpost.cz/locations/?type=BALIKOVNY&skipLocation=false';
+  const overlay=document.createElement('div');
+  overlay.id='balikovnaModalOverlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:10px';
+  overlay.innerHTML=`
+    <div style="width:min(1100px,98vw);height:min(980px,98vh);background:#fff;display:flex;flex-direction:column;overflow:hidden;border-radius:6px">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #eee;background:#fff;flex-shrink:0">
+        <div style="display:flex;align-items:center">${balikovnaLogoSVG(26)}</div>
+        <button type="button" onclick="closeBalikovnaModal()" style="background:#111;color:#fff;border:none;width:34px;height:34px;font-size:18px;cursor:pointer;border-radius:4px;line-height:1">✕</button>
+      </div>
+      <iframe id="balikovnaIframe" src="${src}" title="Výběr Balíkovny" allow="geolocation" style="flex:1;border:none;width:100%"></iframe>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  window.addEventListener('message', _balikovnaMessageListener);
+}
+
+window.closeBalikovnaModal=function(){
+  const overlay=document.getElementById('balikovnaModalOverlay');
+  if(overlay)overlay.remove();
+  window.removeEventListener('message', _balikovnaMessageListener);
+}
+
+function _balikovnaMessageListener(event){
+  if(!event.data || event.data.message!=='pickerResult')return;
+  const point=event.data.point;
+  if(!point)return;
+  _balikovnaPointId=String(point.id||'');
+  _balikovnaPointName=point.name||'';
+  _balikovnaZip=point.zip||'';
+  const nameEl=document.getElementById('balikovnaBranchName');
+  const zipEl=document.getElementById('balikovnaBranchZip');
+  const selEl=document.getElementById('balikovnaBranchSelected');
+  const btn=document.getElementById('balikovnaPickBtn');
+  if(nameEl)nameEl.textContent=point.name||'';
+  if(zipEl)zipEl.textContent=point.zip?'PSČ '+point.zip:'';
+  if(selEl)selEl.style.display='flex';
+  if(btn)btn.textContent='🔄 Změnit Balíkovnu';
+  showToast('✅ Balíkovna zvolena: '+(point.name||''));
+  closeBalikovnaModal();
+}
+
 window.submitOrder=function(){
   // Validace telefonu
   if(!validatePhone('phone')||!isValidPhone(getPhoneValue('phone'))){
@@ -3704,6 +3852,15 @@ window.submitOrder=function(){
   if(shipCarrier==='zasilkovna'&&!zasilkovnaPointId){
     showToast('Vyber pobočku Zásilkovny','error');
     document.getElementById('packetaPickBtn')?.focus();
+    return;
+  }
+  if(shipCarrier==='balikovna'&&!_balikovnaPointId){
+    showToast('Vyber Balíkovnu','error');
+    document.getElementById('balikovnaPickBtn')?.focus();
+    return;
+  }
+  if(shipCarrier==='balikovna'&&payOpt.dataset.pay==='cod'){
+    showToast('❌ Dobírka není u Balíkovny momentálně možná — vyber jinou platbu','error');
     return;
   }
   // Zásilkovna na adresu — validace adresních polí
@@ -3745,9 +3902,12 @@ window.submitOrder=function(){
       dic:document.getElementById('companyDic')?.value||'',
     }:null,
     ship:shipOpt.dataset.ship,
-    shipBranch:zasilkovnaBranch,
+    shipBranch:shipCarrier==='balikovna'?_balikovnaPointName:zasilkovnaBranch,
     packeta_point_id:zasilkovnaPointId,
     packeta_point_name:zasilkovnaBranch,
+    balikovna_point_id:shipCarrier==='balikovna'?_balikovnaPointId:'',
+    balikovna_point_name:shipCarrier==='balikovna'?_balikovnaPointName:'',
+    balikovna_zip:shipCarrier==='balikovna'?_balikovnaZip:'',
     deliveryAddress:deliveryAddress,
     pay:payOpt.dataset.pay,
     paymentStatus:(payOpt.dataset.pay==='cod'?'cod':(['card','applepay','googlepay'].includes(payOpt.dataset.pay)?'pending':'pending')),
@@ -3999,7 +4159,7 @@ function renderPaymentOptions(){
       ? `<span style="font-family:'Archivo Black',sans-serif;font-size:13px;white-space:nowrap">+39 Kč</span>`
       : _zdarma;
     const iconHtml = PAY_ICONS[m.key] || '';
-    return `<label class="option ${sel}" data-pay="${m.key}"><input type="radio" name="pay" ${checked}><div class="option-text"><strong>${escapeHtml(m.label)}</strong><span>${escapeHtml(m.sub)}</span></div><div style="display:flex;align-items:center;gap:7px;flex-shrink:0;margin-left:4px">${iconHtml}${priceHtml}</div></label>`;
+    return `<label class="option ${sel}" data-pay="${m.key}" ${isCod?'id="codPayOption"':''}><input type="radio" name="pay" ${checked}><div class="option-text"><strong>${escapeHtml(m.label)}</strong><span>${escapeHtml(m.sub)}${isCod?' <em id="codBalikovnaHint" style="display:none;color:var(--red);font-style:normal">· nedostupné pro Balíkovnu</em>':''}</span></div><div style="display:flex;align-items:center;gap:7px;flex-shrink:0;margin-left:4px">${iconHtml}${priceHtml}</div></label>`;
   }).join('');
 }
 
@@ -4236,7 +4396,7 @@ function viewSuccess(){
   const allOrds=getOrders();
   if(!allOrds.find(x=>x.id===order.id)){allOrds.push(order);localStorage.setItem('hopi_orders',JSON.stringify(allOrds));}
   const payL={card:'Platební karta',applepay:'Apple Pay',googlepay:'Google Pay',transfer:'Bankovní převod',cod:'Dobírka'}[order.pay]||order.pay;
-  const shipL={zasilkovna:'Zásilkovna',zasilkovna_address:'Zásilkovna na adresu',ppl:'PPL k ruce',kuryr:'Kurýr'}[order.ship]||order.ship;
+  const shipL={zasilkovna:'Zásilkovna',zasilkovna_address:'Zásilkovna na adresu',balikovna:'Balíkovna',ppl:'PPL k ruce',kuryr:'Kurýr'}[order.ship]||order.ship;
   const s=getSettings();
   const vs=(order.id||'').replace(/\D/g,'');
 
@@ -4848,6 +5008,10 @@ function viewInfo({t='doprava'}={}){
         const addrBase=sc.zasilkovnaAddressPrice!=null?sc.zasilkovnaAddressPrice:99;
         carriers.push(`<li><strong style="color:#fff">Zásilkovna na adresu</strong> — ${formatPrice(addrBase)} Kč${freeNote} · doručení přímo k vám · 1–2 pracovní dny</li>`);
       }
+      if(sc.balikovnaEnabled){
+        const balBase=sc.balikovnaPrice!=null?sc.balikovnaPrice:79;
+        carriers.push(`<li><strong style="color:#fff">Balíkovna</strong> — ${formatPrice(balBase)} Kč${freeNote} · box nebo výdejní místo České pošty · obvykle následující pracovní den</li>`);
+      }
       if(sc.pplEnabled){
         carriers.push(`<li><strong style="color:#fff">PPL k ruce</strong> — 99 Kč${freeNote} · přímo na adresu · 1–2 dny</li>`);
       }
@@ -5261,6 +5425,7 @@ window.adminLogout=async function(){
 }
 
 let adminView='orders';
+let dopravaTab='zasilkovna';
 let adminOrderId=null;
 
 function closeMobileSidebar(){
@@ -5321,7 +5486,7 @@ function viewAdmin(){
           <li><a class="${adminView==='stats'?'active':''}" onclick="adminView='stats';adminOrderId=null;viewAdmin()">📊 <span>Statistiky</span></a></li>
           <div class="sidebar-section">Web</div>
           <li><a class="${adminView==='payments'?'active':''}" onclick="adminView='payments';adminOrderId=null;viewAdmin()">💳 <span>Platby (Snipcart)</span></a></li>
-          <li><a class="${adminView==='shipping'?'active':''}" onclick="adminView='shipping';adminOrderId=null;viewAdmin()">📦 <span>Doprava (Zásilkovna)</span></a></li>
+          <li><a class="${adminView==='shipping'?'active':''}" onclick="adminView='shipping';adminOrderId=null;viewAdmin()">🚚 <span>Doprava</span></a></li>
           <li><a class="${adminView==='sheets'?'active':''}" onclick="adminView='sheets';adminOrderId=null;viewAdmin()">☁️ <span>Backend (Sheets)</span></a></li>
           <li><a class="${adminView==='website'?'active':''}" onclick="adminView='website';adminOrderId=null;viewAdmin()">🌐 <span>Nastavení webu</span></a></li>
           <li><a class="${adminView==='settings'?'active':''}" onclick="adminView='settings';adminOrderId=null;viewAdmin()">⚙️ <span>Nastavení shopu</span></a></li>
@@ -6228,7 +6393,7 @@ function viewOrderDetail(id){
   const s=STATUSES[o.status||'new'];
   const currentIdx=s.stepIdx;
   const payL={card:'Platební karta',applepay:'Apple Pay',googlepay:'Google Pay',transfer:'Převod',cod:'Dobírka'}[o.pay]||o.pay;
-  const shipL={zasilkovna:'Zásilkovna',zasilkovna_address:'Zásilkovna na adresu',ppl:'PPL k ruce',kuryr:'Kurýr'}[o.ship]||o.ship;
+  const shipL={zasilkovna:'Zásilkovna',zasilkovna_address:'Zásilkovna na adresu',balikovna:'Balíkovna',ppl:'PPL k ruce',kuryr:'Kurýr'}[o.ship]||o.ship;
 
   return `
     <div class="view-head">
@@ -6353,6 +6518,28 @@ function viewOrderDetail(id){
             ${o.shipBranch?`<div class="detail-line"><span class="k">Pobočka</span><span style="font-weight:600;color:#111">📍 ${escapeHtml(o.shipBranch)}</span></div>`:''}
             ${o.ship==='zasilkovna'?`<div class="detail-line" style="align-items:flex-start"><span class="k">Packeta</span><div>${o.packeta_point_id?`<div style="font-size:11px;color:#555;font-family:'JetBrains Mono',monospace;margin-bottom:8px">ID pobočky: ${escapeHtml(o.packeta_point_id)}</div>`:''}<button class="abtn abtn-sm abtn-primary" onclick="createPacketaShipmentAdmin('${o.id}')">📦 Vytvořit zásilku v Packeta</button></div></div>`:''}
             ${o.ship==='zasilkovna_address'?`<div class="detail-line" style="align-items:flex-start"><span class="k">Adresa doručení</span><div style="line-height:1.6;font-size:13px">${o.deliveryAddress?`<div>${escapeHtml(o.deliveryAddress.street)}</div><div>${escapeHtml(o.deliveryAddress.zip)} ${escapeHtml(o.deliveryAddress.city)}</div><div>${escapeHtml(o.deliveryAddress.country)}</div><div style="margin-top:8px"><button class="abtn abtn-sm abtn-primary" onclick="createPacketaShipmentAdmin('${o.id}')">📦 Vytvořit zásilku v Packeta</button></div>`:'<span style="color:#999">Adresa neuložena</span><div style="margin-top:8px"><button class="abtn abtn-sm abtn-primary" onclick="createPacketaShipmentAdmin(\'${o.id}\')">📦 Vytvořit zásilku v Packeta</button></div>'}</div></div>`:''}
+            ${o.ship==='balikovna'?`<div class="detail-line" style="align-items:flex-start"><span class="k">📮 Adresní štítek</span><div style="line-height:1.6;font-size:13px">
+              ${(()=>{const invC=getInvoiceConfig();const s=getSettings();return `
+              <div style="background:#fff;color:#111;border:1px solid #ccc;font-family:Arial,Helvetica,sans-serif;max-width:300px;overflow:hidden">
+                <div style="padding:10px 14px;border-bottom:1px solid #ddd">${balikovnaLogoSVG(20)}</div>
+                <div style="display:flex;border-bottom:1px solid #ddd">
+                  <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:9px;color:#888;padding:8px 4px;border-right:1px solid #eee;text-align:center">ODESÍLATEL<br>From</div>
+                  <div style="padding:8px 12px;font-size:11px;line-height:1.5">
+                    <div>${escapeHtml(invC.companyName||s.shopName||'HOPI VIRTUAL')}</div>
+                    <div>${escapeHtml(invC.companyAddress||'')}</div>
+                  </div>
+                </div>
+                <div style="display:flex">
+                  <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:9px;color:#888;padding:8px 4px;border-right:1px solid #eee;text-align:center">ADRESÁT<br>To</div>
+                  <div style="padding:8px 12px;font-size:12px;line-height:1.6">
+                    <div style="font-weight:700">${escapeHtml((o.customer?.firstName||'')+' '+(o.customer?.lastName||''))}</div>
+                    <div>BALÍKOVNA</div>
+                    <div style="font-weight:700;font-size:14px">${escapeHtml(o.balikovna_zip||'')} ${escapeHtml(o.balikovna_point_name||o.shipBranch||'')}</div>
+                  </div>
+                </div>
+              </div>`;})()}
+              <div style="margin-top:8px;color:#777;font-size:11px">Náhled pro ruční přípravu zásilky (bez čárového kódu — bez smlouvy o hromadném podání Balíkovna nelze vygenerovat). PSČ vždy z parametru ZIP, nikoli z adresy výdejního místa.</div>
+            </div></div>`:''}
             <div class="detail-line"><span class="k">Platba</span><span>${payL}</span></div>
             <div class="detail-line" style="align-items:center">
               <span class="k">Stav platby</span>
@@ -7287,7 +7474,7 @@ window.testSnipcartConnection=async function(){
 
 // ============== SHIPPING (ZÁSILKOVNA) SETTINGS ==============
 function getShippingConfig(){
-  const def={provider:'none',packetaApiKey:'',packetaEnabled:false,defaultCountry:'cz',pplEnabled:false,kuryrEnabled:false,zasilkovnaAddressEnabled:false,zasilkovnaAddressPrice:99};
+  const def={provider:'none',packetaApiKey:'',packetaEnabled:false,defaultCountry:'cz',pplEnabled:false,kuryrEnabled:false,zasilkovnaAddressEnabled:false,zasilkovnaAddressPrice:99,balikovnaEnabled:false,balikovnaPrice:79,balikovnaApiKey:'',balikovnaContractNumber:''};
   const saved=getAppSetting('shipping_config',{});
   const parsed=(typeof saved==='string')?JSON.parse(saved):(saved||{});
   return Object.assign({},def,parsed);
@@ -7298,12 +7485,38 @@ async function setShippingConfig(c){
 
 function viewShippingSettings(){
   const config=getShippingConfig();
-  const isConfigured = config.packetaEnabled && !!config.packetaApiKey;
+  const tabs=[
+    {id:'zasilkovna',icon:'📦',label:'Zásilkovna'},
+    {id:'balikovna',icon:'📮',label:'Balíkovna'},
+    {id:'zasilkovna_address',icon:'🏠',label:'Zásilkovna na adresu'},
+    {id:'ppl',icon:'🟠',label:'PPL'},
+    {id:'kuryr',icon:'🏍️',label:'Kurýr'},
+  ];
+  if(!tabs.find(t=>t.id===dopravaTab)) dopravaTab='zasilkovna';
+  const bodyById={
+    zasilkovna:renderDopravaZasilkovna,
+    balikovna:renderDopravaBalikovna,
+    zasilkovna_address:renderDopravaZasilkovnaAdresa,
+    ppl:renderDopravaPpl,
+    kuryr:renderDopravaKuryr,
+  };
   return `
     <div class="view-head">
-      <div><h1>📦 Doprava</h1><div class="sub">Konfigurace dopravců a výdejních míst</div></div>
+      <div><h1>🚚 Doprava</h1><div class="sub">Konfigurace dopravců a výdejních míst</div></div>
     </div>
+    <div class="admin-content">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;border-bottom:1px solid #eee;padding-bottom:20px">
+        ${tabs.map(t=>`<button type="button" class="abtn ${dopravaTab===t.id?'abtn-primary':''}" onclick="dopravaTab='${t.id}';viewAdmin()">${t.icon} ${t.label}</button>`).join('')}
+      </div>
+      ${(bodyById[dopravaTab]||renderDopravaZasilkovna)(config)}
+    </div>
+  `;
+}
 
+// ===== Doprava — Zásilkovna (výdejní místo) =====
+function renderDopravaZasilkovna(config){
+  const isConfigured = config.packetaEnabled && !!config.packetaApiKey;
+  return `
     <div style="background:${isConfigured?'linear-gradient(135deg,rgba(0,138,63,0.08),rgba(0,200,83,0.12))':'linear-gradient(135deg,#fff8e1,#fff3c4)'};border:1px solid ${isConfigured?'var(--green)':'#ffc107'};padding:16px 20px;margin-bottom:24px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
       <div style="font-size:28px">${isConfigured?'🟢':'🟡'}</div>
       <div style="flex:1;min-width:200px">
@@ -7351,70 +7564,201 @@ function viewShippingSettings(){
       </div>
 
       <div style="display:flex;gap:12px;flex-wrap:wrap;padding-top:20px;border-top:1px solid #eee">
-        <button class="abtn abtn-primary" onclick="saveShippingConfig()">💾 Uložit nastavení</button>
+        <button class="abtn abtn-primary" onclick="saveShippingConfig()">💾 Uložit</button>
         <button class="abtn" onclick="testPacketaWidget()">🗺️ Otestovat widget</button>
       </div>
+    </div>
+  `;
+}
 
-      <div style="margin-top:24px;padding:14px;background:#f5f5f5;font-size:12px;color:#666;line-height:1.6">
-        <strong>ℹ️ Poznámka:</strong> Pro plnou integraci se Snipcartem (aby si zákazník vybral pobočku přímo v Snipcart košíku) je potřeba pokročilá custom shipping integrace. Zatím tato sekce slouží pro <strong>uložení API klíče</strong> a základní widget. Plnou integraci přidáme v dalším kroku.
+// ===== Doprava — Balíkovna (Česká pošta) =====
+function renderDopravaBalikovna(config){
+  const isConfigured = !!config.balikovnaEnabled;
+  return `
+    <div style="background:${isConfigured?'linear-gradient(135deg,rgba(0,138,63,0.08),rgba(0,200,83,0.12))':'linear-gradient(135deg,#fff8e1,#fff3c4)'};border:1px solid ${isConfigured?'var(--green)':'#ffc107'};padding:16px 20px;margin-bottom:24px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+      <div style="font-size:28px">${isConfigured?'🟢':'🟡'}</div>
+      <div style="flex:1;min-width:200px">
+        <div style="font-family:'Archivo Black',sans-serif;font-size:14px;text-transform:uppercase;color:#111">${isConfigured?'Stav: Balíkovna aktivní':'Balíkovna není aktivní'}</div>
+        <div style="font-size:13px;color:#555;margin-top:4px">${isConfigured?'Zákazníci si mohou vybrat výdejní místo Balíkovny při checkoutu.':'Zaškrtni Aktivovat Balíkovnu a ulož.'}</div>
       </div>
     </div>
 
-    <div style="background:#fff;padding:24px;border:1px solid var(--border);max-width:800px;margin-top:24px">
-      <h3 style="font-family:'Archivo Black',sans-serif;font-size:16px;text-transform:uppercase;margin-bottom:20px">🚚 Aktivní dopravci</h3>
-      <p style="font-size:13px;color:#666;margin-bottom:20px;line-height:1.6">Zaškrtnuté dopravce uvidí zákazník při výběru dopravy v checkoutu. Zásilkovna je vždy aktivní.</p>
-
-      <div class="form-group" style="margin-bottom:16px">
-        <label style="display:flex;gap:12px;padding:14px 16px;border:2px solid ${config.zasilkovnaAddressEnabled?'var(--green)':'#ddd'};cursor:pointer;background:${config.zasilkovnaAddressEnabled?'rgba(0,138,63,0.05)':'#fff'}">
-          <input type="checkbox" id="zasilkovnaAddressEnabled" ${config.zasilkovnaAddressEnabled?'checked':''} style="accent-color:var(--green);margin-top:3px;width:18px;height:18px">
-          <div style="flex:1">
-            <div style="font-weight:700;margin-bottom:4px">🏠 Zásilkovna na adresu</div>
-            <div style="font-size:13px;color:#555;line-height:1.6">Doručení přímo na adresu zákazníka · zákazník zadá adresu ručně (bez widgetu)</div>
-          </div>
-        </label>
-        <div style="margin-top:10px;padding:12px 16px;background:#f9f9f9;border:1px solid #eee;display:flex;align-items:center;gap:16px">
-          <label style="font-size:13px;color:#555;white-space:nowrap">Cena dopravy (Kč):</label>
-          <input type="number" id="zasilkovnaAddressPrice" value="${config.zasilkovnaAddressPrice!=null?config.zasilkovnaAddressPrice:99}" min="0" style="width:100px;padding:8px;border:1px solid #ddd;font-size:14px">
-          <span style="font-size:12px;color:#888">Doprava zdarma nad ${getSettings().freeShippingOver||1500} Kč (stejná hranice jako ostatní)</span>
-        </div>
+    <div style="background:#fff;padding:24px;border:1px solid var(--border);max-width:800px">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap">
+        <div style="padding:10px 16px;background:#f9f9f9;border:1px solid #eee">${balikovnaLogoSVG(30)}</div>
+        <div style="flex:1;min-width:220px;font-size:13px;color:#555;line-height:1.6">Oficiální síť České pošty — přes 9 000 výdejních míst, poboček a boxů po celé ČR. Žádná registrace ani API klíč nejsou potřeba, výběr místa zajišťuje přímo widget České pošty.</div>
       </div>
 
-      <div class="form-group" style="margin-bottom:16px">
-        <label style="display:flex;gap:12px;padding:14px 16px;border:2px solid ${config.pplEnabled?'var(--green)':'#ddd'};cursor:pointer;background:${config.pplEnabled?'rgba(0,138,63,0.05)':'#fff'}">
-          <input type="checkbox" id="pplEnabled" ${config.pplEnabled?'checked':''} style="accent-color:var(--green);margin-top:3px;width:18px;height:18px">
+      <div style="background:#f0f7ff;border-left:4px solid #0099ff;padding:14px 18px;margin-bottom:24px;font-size:13px;line-height:1.7">
+        <strong>📋 Jak to funguje:</strong><br>
+        1. Zaškrtni níže „Aktivovat Balíkovnu" a ulož<br>
+        2. Zákazník si v checkoutu na mapě vybere konkrétní pobočku/box<br>
+        3. V detailu objednávky v adminu uvidíš hotový adresní štítek (jméno / BALÍKOVNA / PSČ+název) přesně podle vzoru České pošty
+      </div>
+
+      <div style="background:#fff3cd;border-left:4px solid #f9a825;padding:14px 18px;margin-bottom:24px;font-size:13px;line-height:1.7">
+        <strong>⚠️ Dobírka zatím nejde:</strong> Bez smlouvy o podání s Českou poštou nelze přes Balíkovnu vybírat dobírku — checkout ji u této dopravy automaticky skryje/zablokuje. Až smlouvu uzavřeš, dej vědět a dobírku odemkneme.
+      </div>
+
+      <div class="form-group" style="margin-bottom:24px">
+        <label style="display:flex;gap:12px;padding:14px 16px;border:2px solid ${config.balikovnaEnabled?'var(--green)':'#ddd'};cursor:pointer;background:${config.balikovnaEnabled?'rgba(0,138,63,0.05)':'#fff'}">
+          <input type="checkbox" id="balikovnaEnabled" ${config.balikovnaEnabled?'checked':''} style="accent-color:var(--green);margin-top:3px;width:18px;height:18px">
           <div style="flex:1">
-            <div style="font-weight:700;margin-bottom:4px">🟠 PPL k ruce</div>
-            <div style="font-size:13px;color:#555;line-height:1.6">Doručení přímo na adresu · 1–2 pracovní dny · 99 Kč</div>
+            <div style="font-weight:700;margin-bottom:4px">✅ Aktivovat Balíkovnu</div>
+            <div style="font-size:13px;color:#555;line-height:1.6">Při checkoutu se zákazníkovi nabídne Balíkovna jako možnost dopravy a widget pro výběr pobočky.</div>
           </div>
         </label>
       </div>
 
       <div class="form-group" style="margin-bottom:24px">
+        <label style="font-size:13px;color:#555;display:block;margin-bottom:8px">Cena dopravy (Kč)</label>
+        <input type="number" id="balikovnaPrice" value="${config.balikovnaPrice!=null?config.balikovnaPrice:79}" min="0" style="width:140px;padding:10px;border:1px solid #ddd;font-size:14px">
+        <div style="font-size:12px;color:#888;margin-top:6px">Doprava zdarma nad ${getSettings().freeShippingOver||1500} Kč (stejná hranice jako ostatní dopravci)</div>
+      </div>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap;padding-top:20px;border-top:1px solid #eee">
+        <button class="abtn abtn-primary" onclick="saveDopravaBalikovna()">💾 Uložit</button>
+        <button class="abtn" onclick="openBalikovnaModal()">🗺️ Otestovat widget</button>
+      </div>
+    </div>
+
+    <div style="background:#f0f7ff;border-left:4px solid #0099ff;padding:14px 18px;margin:24px 0;font-size:13px;line-height:1.7">
+      <strong>📋 Jak začít s plnou integrací (smlouva o podání):</strong><br>
+      1. Kontaktuj obchodního zástupce České pošty nebo Kontaktní centrum a domluv „smlouvu o podání" pro Balíkovnu (potřebuješ IČO!)<br>
+      2. Po podpisu smlouvy dostaneš přístup do Klientské zóny / eSIPO, číslo zákazníka a API klíč<br>
+      3. Číslo smlouvy a API klíč vlož níže a ulož<br>
+      4. Dej nám vědět — napojíme automatické podací štítky s čárovým kódem a odemkneme dobírku
+    </div>
+
+    <div style="background:#fff;padding:24px;border:1px solid var(--border);max-width:800px">
+      <h3 style="font-family:'Archivo Black',sans-serif;font-size:16px;text-transform:uppercase;margin-bottom:20px">Smlouva s Českou poštou</h3>
+
+      <div class="form-group" style="background:#fef7e0;padding:14px;border:1px solid #f9a825;margin-bottom:16px">
+        <label style="font-weight:700;color:#e65100">🔑 API klíč (Podání Online / eSIPO)</label>
+        <input type="text" id="balikovnaApiKey" value="${escapeHtml(config.balikovnaApiKey||'')}" placeholder="doplní se po aktivaci smlouvy" style="width:100%;padding:10px;font-family:'JetBrains Mono',monospace;font-size:13px;border:1px solid #ddd;margin-top:6px">
+        <div style="font-size:12px;color:#666;margin-top:6px">Najdeš v Klientské zóně / eSIPO po aktivaci smlouvy s Českou poštou.</div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:24px">
+        <label style="font-size:13px;color:#555;display:block;margin-bottom:8px">Číslo zákazníka / smlouvy o podání</label>
+        <input type="text" id="balikovnaContractNumber" value="${escapeHtml(config.balikovnaContractNumber||'')}" placeholder="např. 123456789" style="width:100%;max-width:320px;padding:10px;border:1px solid #ddd;font-family:'JetBrains Mono',monospace;font-size:13px">
+      </div>
+
+      <p style="font-size:12px;color:#999;margin-bottom:0;line-height:1.6">ℹ️ Vyhledávač Balíkoven výše funguje bez smlouvy — tahle pole zatím nic neaktivují, jen se bezpečně uloží pro budoucí použití. Nic se jejich vyplněním nerozbije.</p>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap;padding-top:20px;border-top:1px solid #eee;margin-top:20px">
+        <button class="abtn" onclick="saveDopravaBalikovnaContract()">💾 Uložit smluvní údaje</button>
+      </div>
+    </div>
+  `;
+}
+
+// ===== Doprava — Zásilkovna na adresu =====
+function renderDopravaZasilkovnaAdresa(config){
+  const isConfigured = !!config.zasilkovnaAddressEnabled;
+  return `
+    <div style="background:${isConfigured?'linear-gradient(135deg,rgba(0,138,63,0.08),rgba(0,200,83,0.12))':'linear-gradient(135deg,#fff8e1,#fff3c4)'};border:1px solid ${isConfigured?'var(--green)':'#ffc107'};padding:16px 20px;margin-bottom:24px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+      <div style="font-size:28px">${isConfigured?'🟢':'🟡'}</div>
+      <div style="flex:1;min-width:200px">
+        <div style="font-family:'Archivo Black',sans-serif;font-size:14px;text-transform:uppercase;color:#111">${isConfigured?'Stav: aktivní':'Neaktivní'}</div>
+        <div style="font-size:13px;color:#555;margin-top:4px">Doručení přímo na adresu zákazníka přes síť Zásilkovny · zákazník zadá adresu ručně (bez widgetu).</div>
+      </div>
+    </div>
+
+    <div style="background:#f0f7ff;border-left:4px solid #0099ff;padding:14px 18px;margin-bottom:24px;font-size:13px;line-height:1.7">
+      <strong>📋 Jak začít:</strong> Používá stejný Zásilkovna účet a API klíč jako výdejní místa (záložka Zásilkovna) — žádné další nastavení navíc.
+    </div>
+
+    <div style="background:#fff;padding:24px;border:1px solid var(--border);max-width:800px">
+      <div class="form-group" style="margin-bottom:24px">
+        <label style="display:flex;gap:12px;padding:14px 16px;border:2px solid ${config.zasilkovnaAddressEnabled?'var(--green)':'#ddd'};cursor:pointer;background:${config.zasilkovnaAddressEnabled?'rgba(0,138,63,0.05)':'#fff'}">
+          <input type="checkbox" id="zasilkovnaAddressEnabled" ${config.zasilkovnaAddressEnabled?'checked':''} style="accent-color:var(--green);margin-top:3px;width:18px;height:18px">
+          <div style="flex:1">
+            <div style="font-weight:700;margin-bottom:4px">🏠 Aktivovat Zásilkovna na adresu</div>
+            <div style="font-size:13px;color:#555;line-height:1.6">Doručení přímo na adresu zákazníka.</div>
+          </div>
+        </label>
+      </div>
+
+      <div class="form-group" style="margin-bottom:24px">
+        <label style="font-size:13px;color:#555;display:block;margin-bottom:8px">Cena dopravy (Kč)</label>
+        <input type="number" id="zasilkovnaAddressPrice" value="${config.zasilkovnaAddressPrice!=null?config.zasilkovnaAddressPrice:99}" min="0" style="width:140px;padding:10px;border:1px solid #ddd;font-size:14px">
+        <div style="font-size:12px;color:#888;margin-top:6px">Doprava zdarma nad ${getSettings().freeShippingOver||1500} Kč (stejná hranice jako ostatní)</div>
+      </div>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap;padding-top:20px;border-top:1px solid #eee">
+        <button class="abtn abtn-primary" onclick="saveDopravaZasilkovnaAdresa()">💾 Uložit</button>
+      </div>
+    </div>
+  `;
+}
+
+// ===== Doprava — PPL =====
+function renderDopravaPpl(config){
+  const isConfigured = !!config.pplEnabled;
+  return `
+    <div style="background:${isConfigured?'linear-gradient(135deg,rgba(0,138,63,0.08),rgba(0,200,83,0.12))':'linear-gradient(135deg,#fff8e1,#fff3c4)'};border:1px solid ${isConfigured?'var(--green)':'#ffc107'};padding:16px 20px;margin-bottom:24px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+      <div style="font-size:28px">${isConfigured?'🟢':'🟡'}</div>
+      <div style="flex:1;min-width:200px">
+        <div style="font-family:'Archivo Black',sans-serif;font-size:14px;text-transform:uppercase;color:#111">${isConfigured?'Stav: PPL aktivní':'PPL není aktivní'}</div>
+        <div style="font-size:13px;color:#555;margin-top:4px">Doručení k ruce přímo na adresu zákazníka.</div>
+      </div>
+    </div>
+
+    <div style="background:#f0f7ff;border-left:4px solid #0099ff;padding:14px 18px;margin-bottom:24px;font-size:13px;line-height:1.7">
+      <strong>📋 Jak začít s PPL:</strong><br>
+      1. Zaregistruj se jako firemní zákazník na <a href="https://www.ppl.cz/kontakt/chci-zacit-posilat" target="_blank" style="color:#0066cc;font-weight:600">ppl.cz</a> (potřebuješ IČO a uzavřít přepravní smlouvu)<br>
+      2. Po schválení získáš přístup do PPL ParcelShop portálu / API<br>
+      3. Zatím zde jen aktivuješ zobrazení možnosti PPL v checkoutu — plná API integrace (automatické vytváření zásilek) není součástí tohoto kroku
+    </div>
+
+    <div style="background:#fff;padding:24px;border:1px solid var(--border);max-width:800px">
+      <div class="form-group" style="margin-bottom:24px">
+        <label style="display:flex;gap:12px;padding:14px 16px;border:2px solid ${config.pplEnabled?'var(--green)':'#ddd'};cursor:pointer;background:${config.pplEnabled?'rgba(0,138,63,0.05)':'#fff'}">
+          <input type="checkbox" id="pplEnabled" ${config.pplEnabled?'checked':''} style="accent-color:var(--green);margin-top:3px;width:18px;height:18px">
+          <div style="flex:1">
+            <div style="font-weight:700;margin-bottom:4px">🟠 Aktivovat PPL k ruce</div>
+            <div style="font-size:13px;color:#555;line-height:1.6">Doručení přímo na adresu · 1–2 pracovní dny · 99 Kč</div>
+          </div>
+        </label>
+      </div>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap;padding-top:20px;border-top:1px solid #eee">
+        <button class="abtn abtn-primary" onclick="saveDopravaPpl()">💾 Uložit</button>
+      </div>
+    </div>
+  `;
+}
+
+// ===== Doprava — Kurýr (Praha) =====
+function renderDopravaKuryr(config){
+  const isConfigured = !!config.kuryrEnabled;
+  return `
+    <div style="background:${isConfigured?'linear-gradient(135deg,rgba(0,138,63,0.08),rgba(0,200,83,0.12))':'linear-gradient(135deg,#fff8e1,#fff3c4)'};border:1px solid ${isConfigured?'var(--green)':'#ffc107'};padding:16px 20px;margin-bottom:24px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+      <div style="font-size:28px">${isConfigured?'🟢':'🟡'}</div>
+      <div style="flex:1;min-width:200px">
+        <div style="font-family:'Archivo Black',sans-serif;font-size:14px;text-transform:uppercase;color:#111">${isConfigured?'Stav: Kurýr aktivní':'Kurýr není aktivní'}</div>
+        <div style="font-size:13px;color:#555;margin-top:4px">Expresní doručení v Praze · dnes do 3 h.</div>
+      </div>
+    </div>
+
+    <div style="background:#f0f7ff;border-left:4px solid #0099ff;padding:14px 18px;margin-bottom:24px;font-size:13px;line-height:1.7">
+      <strong>📋 Jak začít:</strong> Vlastní/smluvní kurýr pro Prahu — potřebuješ dohodu s konkrétním kurýrem/službou. Tady jen zapínáš zobrazení možnosti v checkoutu, rozvoz řešíš ručně.
+    </div>
+
+    <div style="background:#fff;padding:24px;border:1px solid var(--border);max-width:800px">
+      <div class="form-group" style="margin-bottom:24px">
         <label style="display:flex;gap:12px;padding:14px 16px;border:2px solid ${config.kuryrEnabled?'var(--green)':'#ddd'};cursor:pointer;background:${config.kuryrEnabled?'rgba(0,138,63,0.05)':'#fff'}">
           <input type="checkbox" id="kuryrEnabled" ${config.kuryrEnabled?'checked':''} style="accent-color:var(--green);margin-top:3px;width:18px;height:18px">
           <div style="flex:1">
-            <div style="font-weight:700;margin-bottom:4px">🏍️ Kurýr (Praha)</div>
+            <div style="font-weight:700;margin-bottom:4px">🏍️ Aktivovat Kurýra (Praha)</div>
             <div style="font-size:13px;color:#555;line-height:1.6">Expresní doručení v Praze · dnes do 3 h · 149 Kč</div>
           </div>
         </label>
       </div>
 
       <div style="display:flex;gap:12px;flex-wrap:wrap;padding-top:20px;border-top:1px solid #eee">
-        <button class="abtn abtn-primary" onclick="saveShippingCarriers()">💾 Uložit dopravce</button>
-      </div>
-    </div>
-
-    <div style="background:#fff;padding:24px;border:1px solid var(--border);max-width:800px;margin-top:24px">
-      <h3 style="font-family:'Archivo Black',sans-serif;font-size:16px;text-transform:uppercase;margin-bottom:12px">🚚 Další dopravci (později)</h3>
-      <div style="font-size:14px;color:#555;line-height:1.7">
-        <p style="margin-bottom:10px">V dalším kroku můžeme přidat:</p>
-        <ul style="padding-left:20px">
-          <li>📮 <strong>Česká pošta</strong> – Balík do ruky / Na poštu</li>
-          <li>🟠 <strong>PPL</strong> – ParcelShop</li>
-          <li>🔴 <strong>DPD</strong> – Pickup</li>
-          <li>🟢 <strong>WeDo / GLS</strong></li>
-        </ul>
-        <p style="margin-top:10px">Pro každého potřebuješ vlastní účet/smlouvu. Zatím doporučuji <strong>jen Zásilkovnu</strong> – pokrývá ČR i SK a má nejlepší síť poboček.</p>
+        <button class="abtn abtn-primary" onclick="saveDopravaKuryr()">💾 Uložit</button>
       </div>
     </div>
   `;
@@ -7427,18 +7771,50 @@ window.saveShippingConfig=async function(){
   config.packetaEnabled=document.getElementById('packetaEnabled').checked;
   config.defaultCountry=document.getElementById('packetaCountry').value;
   await setShippingConfig(config);
-  showToast('💾 Nastavení uloženo');
+  showToast('💾 Zásilkovna uložena');
   setTimeout(()=>viewAdmin(),300);
 }
 
-window.saveShippingCarriers=async function(){
+window.saveDopravaBalikovna=async function(){
+  const config=getShippingConfig();
+  config.balikovnaEnabled=document.getElementById('balikovnaEnabled').checked;
+  config.balikovnaPrice=Number(document.getElementById('balikovnaPrice').value)||79;
+  await setShippingConfig(config);
+  showToast('💾 Balíkovna uložena');
+  setTimeout(()=>viewAdmin(),300);
+}
+
+window.saveDopravaBalikovnaContract=async function(){
+  const config=getShippingConfig();
+  config.balikovnaContractNumber=document.getElementById('balikovnaContractNumber').value.trim();
+  config.balikovnaApiKey=document.getElementById('balikovnaApiKey').value.trim();
+  await setShippingConfig(config);
+  showToast('💾 Smluvní údaje uloženy — zatím se nikde aktivně nepoužívají');
+  setTimeout(()=>viewAdmin(),300);
+}
+
+window.saveDopravaZasilkovnaAdresa=async function(){
   const config=getShippingConfig();
   config.zasilkovnaAddressEnabled=document.getElementById('zasilkovnaAddressEnabled').checked;
   config.zasilkovnaAddressPrice=Number(document.getElementById('zasilkovnaAddressPrice').value)||99;
+  await setShippingConfig(config);
+  showToast('💾 Zásilkovna na adresu uložena');
+  setTimeout(()=>viewAdmin(),300);
+}
+
+window.saveDopravaPpl=async function(){
+  const config=getShippingConfig();
   config.pplEnabled=document.getElementById('pplEnabled').checked;
+  await setShippingConfig(config);
+  showToast('💾 PPL uloženo');
+  setTimeout(()=>viewAdmin(),300);
+}
+
+window.saveDopravaKuryr=async function(){
+  const config=getShippingConfig();
   config.kuryrEnabled=document.getElementById('kuryrEnabled').checked;
   await setShippingConfig(config);
-  showToast('💾 Dopravci uloženi');
+  showToast('💾 Kurýr uložen');
   setTimeout(()=>viewAdmin(),300);
 }
 
@@ -8552,7 +8928,7 @@ window.printPackingSlip=function(orderId){
   const products=getProducts();
   const s=getSettings();
   const invConfig=getInvoiceConfig();
-  const shipL={zasilkovna:'Zásilkovna',zasilkovna_address:'Zásilkovna na adresu',ppl:'PPL k ruce',kuryr:'Kurýr'}[o.ship]||o.ship;
+  const shipL={zasilkovna:'Zásilkovna',zasilkovna_address:'Zásilkovna na adresu',balikovna:'Balíkovna',ppl:'PPL k ruce',kuryr:'Kurýr'}[o.ship]||o.ship;
   const payL={card:'Karta',applepay:'Apple Pay',googlepay:'Google Pay',transfer:'Převod',cod:'Dobírka'}[o.pay]||o.pay;
 
   const html=`<!DOCTYPE html><html lang="cs"><head><meta charset="UTF-8"><title>Dodací list ${o.id}</title>
@@ -8733,7 +9109,7 @@ CELKEM: ${formatPrice(o.total)} Kč
 ───────────────────────────────
 
 Způsob platby: ${({card:'Karta',applepay:'Apple Pay',googlepay:'Google Pay',transfer:'Převod',cod:'Dobírka'}[o.pay]||o.pay)}
-Doprava: ${({zasilkovna:'Zásilkovna',zasilkovna_address:'Zásilkovna na adresu',ppl:'PPL',kuryr:'Kurýr'}[o.ship]||o.ship)}${o.shipBranch?' — '+o.shipBranch:''}
+Doprava: ${({zasilkovna:'Zásilkovna',zasilkovna_address:'Zásilkovna na adresu',balikovna:'Balíkovna',ppl:'PPL',kuryr:'Kurýr'}[o.ship]||o.ship)}${o.shipBranch?' — '+o.shipBranch:''}
 `;
 
   if(navigator.clipboard&&navigator.clipboard.writeText){
