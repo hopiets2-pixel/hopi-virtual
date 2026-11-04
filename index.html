@@ -3,9 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <script>
-// Hezké odkazy eshophopivirtual.com/spoluprace/ridic a /spoluprace/firma → stránka e-shopu #spoluprace/…
-// (Netlify je díky _redirects obslouží tímhle index.html; adresa se hned přepíše na kořen webu, ať sedí obrázky a skripty.)
-(function(){try{var p=decodeURIComponent(location.pathname),m=p.match(/^(.*\/)spoluprace\/(ridic|řidič|firma)\/?$/i);if(m){var t=/firma/i.test(m[2])?'firma':'ridic';history.replaceState(null,'',m[1]+location.search+'#spoluprace/'+t)}}catch(e){}})();
+// Hezké odkazy eshophopivirtual.com/spoluprace/ridic a /spoluprace/firma – adresa zůstává čistá (bez #).
+// <base> = kořen webu, aby obrázky a soubory s relativní cestou fungovaly i na /spoluprace/…
+// (Netlify je díky _redirects obslouží tímhle index.html; na stage to dělá 404.html.)
+(function(){try{var p=location.pathname,d=decodeURIComponent(p),m=d.match(/^(.*\/)spoluprace\/(ridic|řidič|firma)\/?$/i);var root=m?m[1]:p.replace(/[^\/]*$/,'');window.HV_ROOT=root;var b=document.createElement('base');b.href=root;(document.head||document.documentElement).appendChild(b);if(m){var t=/firma/i.test(m[2])?'firma':'ridic',u=root+'spoluprace/'+t;if(p!==u&&!location.hash)history.replaceState(null,'',u+location.search)}}catch(e){}})();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HOPI VIRTUAL — Official Merch</title>
@@ -3112,17 +3113,50 @@ async function syncOrdersFromSheets(){
 }
 
 // ============== ROUTER ==============
+function hvRoot(){return window.HV_ROOT||location.pathname.replace(/[^/]*$/,'')}
+// Je adresa čistá stránka Spolupráce (/spoluprace/ridic nebo /spoluprace/firma)? → 'ridic' / 'firma' / ''
+function hvSpPathForm(){try{const r=hvRoot(),p=decodeURIComponent(location.pathname);if(p.indexOf(r)!==0)return '';const m=p.slice(r.length).match(/^spoluprace\/(ridic|řidič|firma)\/?$/i);return m?(/firma/i.test(m[1])?'firma':'ridic'):''}catch(e){return ''}}
 function getRoute(){
-  const h=(location.hash||'#home').replace('#','');
+  const raw=(location.hash||'').replace('#','');
+  if(!raw){const f=hvSpPathForm();if(f)return {path:'spoluprace/'+f,params:{}}}
+  const h=raw||'home';
   const [path,query]=h.split('?');
   const params={};
   if(query)query.split('&').forEach(kv=>{const[k,v]=kv.split('=');params[k]=decodeURIComponent(v||'')});
   return {path:path||'home',params};
 }
+// Spolupráce má čistou adresu bez # → #spoluprace/… se přepíše na /spoluprace/…, a jinde se z /spoluprace/… vrátí na kořen webu
+function hvCanonUrl(){try{
+  const h=(location.hash||'').replace(/^#/,''),hm=h.match(/^spoluprace\/(ridic|firma)$/),f=hvSpPathForm();
+  if(hm)history.replaceState(history.state,'',hvRoot()+'spoluprace/'+hm[1]+location.search);
+  else if(f&&h)history.replaceState(history.state,'',hvRoot()+location.search+location.hash);
+}catch(e){}}
 // Přechod na jinou stránku: hned nahoru (bez animace – plynulý posun se při překreslení stránky zastavil v půlce)
-function go(hash){const same=location.hash.replace(/^#/,'')===String(hash).replace(/^#/,'');location.hash=hash;if(same)window.scrollTo({top:0,behavior:'smooth'})}
+function go(hash){
+  hash=String(hash==null?'':hash).replace(/^#/,'');
+  const sp=hash.match(/^spoluprace\/(ridic|firma)$/);
+  if(sp||hvSpPathForm()){
+    const target=sp?hvRoot()+'spoluprace/'+sp[1]+location.search:hvRoot()+location.search+(hash?'#'+hash:'');
+    if(location.pathname+location.search+location.hash===target){window.scrollTo({top:0,behavior:'smooth'});return}
+    try{history.pushState(null,'',target)}catch(e){location.href=target;return}
+    render();return;
+  }
+  const same=location.hash.replace(/^#/,'')===hash;location.hash=hash;if(same)window.scrollTo({top:0,behavior:'smooth'})}
 window.go=go;
-window.addEventListener('hashchange',render);
+// hashchange i popstate (Zpět/Vpřed) → překreslit, ale stejnou adresu jen jednou
+function hvNavRender(){if(location.href===window._hvNavHref)return;render()}
+window.addEventListener('hashchange',hvNavRender);
+window.addEventListener('popstate',hvNavRender);
+// Odkazy href="#…": kvůli <base> by mimo kořen webu (nebo s ?parametry) vedly na nové načtení → přepnout stránku jen přes #
+document.addEventListener('click',function(e){
+  if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
+  const a=e.target&&e.target.closest?e.target.closest('a[href^="#"]'):null;
+  if(!a||(a.target&&a.target!=='_self'))return;
+  if(location.pathname===hvRoot()&&!location.search)return;
+  e.preventDefault();
+  const h=a.getAttribute('href').slice(1);
+  if(hvSpPathForm()||/^spoluprace\//.test(h))go(h);else location.hash=h;
+});
 
 // ============== GLOBÁLNÍ APP SETTINGS (Supabase) ==============
 // KRITICKÉ: Admin nastavení (GoPay, platební metody, Snipcart) MUSÍ být v Supabase,
@@ -3301,6 +3335,7 @@ async function saveSnipcartOrder(snipOrder){
 // Okamžitě nahoru – i v Safari, kde by CSS „scroll-behavior:smooth“ posun rozanimoval a překreslení ho zastavilo
 function hvScrollTopNow(){const r=document.documentElement;const prev=r.style.scrollBehavior;r.style.scrollBehavior='auto';window.scrollTo(0,0);document.body.scrollTop=0;r.style.scrollBehavior=prev;requestAnimationFrame(()=>{if(window.scrollY>0){r.style.scrollBehavior='auto';window.scrollTo(0,0);r.style.scrollBehavior=prev}})}
 function render(){
+  hvCanonUrl();window._hvNavHref=location.href;
   document.body.classList.remove('admin-body');
   const {path,params}=getRoute();
   const views={
@@ -3442,8 +3477,8 @@ function renderFooter(){
               <li><a onclick="go('home')">Všechny produkty</a></li>
               <li><a onclick="go('cart')">Košík</a></li>
               <li><a onclick="go('track')">Sledování objednávky</a></li>
-              <li><a onclick="go('spoluprace/ridic')">Nábor řidičů</a></li>
-              <li><a onclick="go('spoluprace/firma')">Spolupráce s firmami</a></li>
+              <li><a href="spoluprace/ridic" onclick="event.preventDefault();go('spoluprace/ridic')">Nábor řidičů</a></li>
+              <li><a href="spoluprace/firma" onclick="event.preventDefault();go('spoluprace/firma')">Spolupráce s firmami</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -5334,7 +5369,7 @@ function viewTrackOrder({id,email}={}){
 // ⚠️ Musí být STEJNÉ jako v SQL (funkce hopi_is_admin / hopi_is_owner).
 const ADMIN_EMAILS=['hopi.ets2@seznam.cz'].map(e=>e.toLowerCase());
 
-function hvSiteUrl(){return location.origin+location.pathname}
+function hvSiteUrl(){return location.origin+(hvSpPathForm()?hvRoot():location.pathname)}
 function hvIsListedAdmin(email){return ADMIN_EMAILS.includes(String(email||'').trim().toLowerCase())}
 
 // Je přihlášený účet admin / personál? (pevný seznam → SQL funkce → záložně seznam lidí z adminu)
@@ -7449,7 +7484,7 @@ function hvSpDoneHtml(form){
   const cfg=HV_SP[form];
   return `<div class="sp-done"><div class="sp-done-ic">${hvSpIcon('check',38)}</div><h2 class="sp-ct">${escapeHtml(cfg.okTitle)}</h2><p>${escapeHtml(cfg.okText)}</p>
     <div class="sp-done-a"><a class="sp-send" href="#home" onclick="event.preventDefault();go('home')"><span>Zpět do obchodu</span>${hvSpIcon('arrow',20)}</a>
-    <a class="sp-link" href="#spoluprace/${form==='ridic'?'firma':'ridic'}" onclick="event.preventDefault();go('spoluprace/${form==='ridic'?'firma':'ridic'}')">${form==='ridic'?'Máte firmu? Žádost o spolupráci':'Chceš jezdit u nás? Přihláška řidiče'}</a></div></div>`;
+    <a class="sp-link" href="spoluprace/${form==='ridic'?'firma':'ridic'}" onclick="event.preventDefault();go('spoluprace/${form==='ridic'?'firma':'ridic'}')">${form==='ridic'?'Máte firmu? Žádost o spolupráci':'Chceš jezdit u nás? Přihláška řidiče'}</a></div></div>`;
 }
 function hvSpRulesHtml(){
   const r=window._spRules;
@@ -7480,13 +7515,13 @@ function viewSpoluprace(form){
     <main class="sp-page">
       <div class="sp-wrap">
         <div class="sp-left">
-          <nav class="sp-switch" aria-label="Spolupráce"><a href="#spoluprace/ridic" onclick="event.preventDefault();go('spoluprace/ridic')" class="${form==='ridic'?'on':''}" ${form==='ridic'?'aria-current="page"':''}>Řidiči</a><a href="#spoluprace/firma" onclick="event.preventDefault();go('spoluprace/firma')" class="${form==='firma'?'on':''}" ${form==='firma'?'aria-current="page"':''}>Firmy</a></nav>
+          <nav class="sp-switch" aria-label="Spolupráce"><a href="spoluprace/ridic" onclick="event.preventDefault();go('spoluprace/ridic')" class="${form==='ridic'?'on':''}" ${form==='ridic'?'aria-current="page"':''}>Řidiči</a><a href="spoluprace/firma" onclick="event.preventDefault();go('spoluprace/firma')" class="${form==='firma'?'on':''}" ${form==='firma'?'aria-current="page"':''}>Firmy</a></nav>
           <div class="sp-tag"><i></i>${escapeHtml(cfg.tag)}</div>
           <h1 class="sp-h1">${escapeHtml(cfg.h1a)} <span>${escapeHtml(cfg.h1b)}</span></h1>
           <p class="sp-lead">${escapeHtml(cfg.lead)}</p>
           <img class="sp-img" src="${cfg.img}" alt="" loading="lazy" onerror="this.remove()">
           <ul class="sp-perks">${cfg.perks.map(([ic,t,d],i)=>`<li style="--i:${i}"><span class="sp-pi">${hvSpIcon(ic,24).replace(/<(path|circle|rect|line|polyline)\b/g,'<$1 pathLength="1"')}</span><span><b>${escapeHtml(t)}</b><span>${escapeHtml(d)}</span></span></li>`).join('')}</ul>
-          <a class="sp-other" href="#spoluprace/${other}" onclick="event.preventDefault();go('spoluprace/${other}')">${other==='firma'?'Máte virtuální firmu? Žádost o spolupráci':'Chceš jezdit u nás? Přihláška řidiče'} ${hvSpIcon('arrow',18)}</a>
+          <a class="sp-other" href="spoluprace/${other}" onclick="event.preventDefault();go('spoluprace/${other}')">${other==='firma'?'Máte virtuální firmu? Žádost o spolupráci':'Chceš jezdit u nás? Přihláška řidiče'} ${hvSpIcon('arrow',18)}</a>
         </div>
         <section class="sp-card" id="spCard" aria-label="${escapeHtml(cfg.title)}">${hvSpFormHtml(form)}</section>
       </div>
@@ -7610,8 +7645,8 @@ window.hvSpSubmit=async function(){
 function hvSpTeaser(){
   return `<section class="sp-teaser" aria-label="Spolupráce">
     <div class="sp-teaser-in">
-      <a class="sp-tc" href="#spoluprace/ridic" onclick="event.preventDefault();go('spoluprace/ridic')"><span><b>Hledáme řidiče do firmy</b><span>Jezdi s námi konvoje v ETS2.</span></span><i class="sp-ta-btn">${hvSpIcon('arrow',24)}</i></a>
-      <a class="sp-tc alt" href="#spoluprace/firma" onclick="event.preventDefault();go('spoluprace/firma')"><span><b>Máte virtuální firmu?</b><span>Pojeďme spolu – konvoje, propagace, eventy.</span></span><i class="sp-ta-btn">${hvSpIcon('arrow',24)}</i></a>
+      <a class="sp-tc" href="spoluprace/ridic" onclick="event.preventDefault();go('spoluprace/ridic')"><span><b>Hledáme řidiče do firmy</b><span>Jezdi s námi konvoje v ETS2.</span></span><i class="sp-ta-btn">${hvSpIcon('arrow',24)}</i></a>
+      <a class="sp-tc alt" href="spoluprace/firma" onclick="event.preventDefault();go('spoluprace/firma')"><span><b>Máte virtuální firmu?</b><span>Pojeďme spolu – konvoje, propagace, eventy.</span></span><i class="sp-ta-btn">${hvSpIcon('arrow',24)}</i></a>
     </div></section>`;
 }
 
