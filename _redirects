@@ -1,0 +1,4 @@
+# HOPI VIRTUAL – hezké odkazy na formuláře Spolupráce
+# eshophopivirtual.com/spoluprace/ridic a /spoluprace/firma otevřou e-shop (index.html),
+# ten si adresu sám přepne na stránku #spoluprace/…
+/spoluprace/*    /index.html    200
