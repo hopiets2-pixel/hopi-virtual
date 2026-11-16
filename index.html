@@ -3,13 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <script>
-// Hezké odkazy eshophopivirtual.com/spoluprace/ridic a /spoluprace/firma – adresa zůstává čistá (bez #).
+// Hezké odkazy eshophopivirtual.com/spoluprace/ridic, /spoluprace/firma a /produkt/12-nazev – adresa zůstává čistá (bez #).
+// Stage (github.io, localhost) dostane noindex, ať se testovací web nedostane do Googlu.
 // <base> = kořen webu, aby obrázky a soubory s relativní cestou fungovaly i na /spoluprace/…
 // (Netlify je díky _redirects obslouží tímhle index.html; na stage to dělá 404.html.)
-(function(){try{var p=location.pathname,d=decodeURIComponent(p),m=d.match(/^(.*\/)spoluprace\/(ridic|řidič|firma)\/?$/i);var root=m?m[1]:p.replace(/[^\/]*$/,'');window.HV_ROOT=root;var b=document.createElement('base');b.href=root;(document.head||document.documentElement).appendChild(b);if(m){var t=/firma/i.test(m[2])?'firma':'ridic',u=root+'spoluprace/'+t;if(p!==u&&!location.hash)history.replaceState(null,'',u+location.search)}}catch(e){}})();
+(function(){try{var p=location.pathname,d=decodeURIComponent(p),m=d.match(/^(.*\/)(?:spoluprace\/(ridic|řidič|firma)|produkt\/[^\/]+|objednavka\/[^\/]+)\/?$/i);var root=m?m[1]:p.replace(/[^\/]*$/,'');window.HV_ROOT=root;var b=document.createElement('base');b.href=root;(document.head||document.documentElement).appendChild(b);var h=document.head||document.documentElement,st=/(\.github\.io|^localhost|^127\.0\.0\.1)$/.test(location.hostname),sb=st?'bdjoiegnyfzdirrjwycj':'jaktgczqpwxhxxtqfvam';['https://'+sb+'.supabase.co','https://cdn.jsdelivr.net','https://fonts.gstatic.com'].forEach(function(u){var l=document.createElement('link');l.rel='preconnect';l.href=u;l.crossOrigin='';h.appendChild(l)});if(st){var r=document.createElement('meta');r.name='robots';r.content='noindex,nofollow';r.id='hvRobots';h.appendChild(r)}if(m&&m[2]){var t=/firma/i.test(m[2])?'firma':'ridic',u=root+'spoluprace/'+t;if(p!==u&&!location.hash)history.replaceState(null,'',u+location.search)}}catch(e){}})();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HOPI VIRTUAL — Official Merch</title>
+<!--seo-->
+<title>HOPI VIRTUAL – oficiální merch e-shop</title>
+<meta name="description" content="Oficiální merch HOPI VIRTUAL. Prémiové materiály, poctivá práce a rychlé doručení po celé ČR a SR.">
+<link rel="canonical" href="https://eshophopivirtual.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="HOPI VIRTUAL">
+<meta property="og:locale" content="cs_CZ">
+<meta property="og:title" content="HOPI VIRTUAL – oficiální merch e-shop">
+<meta property="og:description" content="Oficiální merch HOPI VIRTUAL. Prémiové materiály, poctivá práce a rychlé doručení po celé ČR a SR.">
+<meta property="og:url" content="https://eshophopivirtual.com/">
+<meta property="og:image" content="https://eshophopivirtual.com/logo-hero.png">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json" id="hvLdSite">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://eshophopivirtual.com/#org","name":"HOPI VIRTUAL","url":"https://eshophopivirtual.com/","logo":"https://eshophopivirtual.com/logo-hero.png","email":"eshophopivirtual@gmail.com"},{"@type":"WebSite","@id":"https://eshophopivirtual.com/#web","name":"HOPI VIRTUAL","url":"https://eshophopivirtual.com/","inLanguage":"cs","publisher":{"@id":"https://eshophopivirtual.com/#org"}}]}</script>
+<!--/seo-->
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1304,7 +1318,10 @@ body.ac-lock{overflow:hidden}
 .sp-link:hover{text-decoration:underline}
 
 /* karty nad patičkou na úvodní stránce */
-.sp-teaser{background:#060606;border-top:1px solid #151515;padding:72px 40px}
+/* bez čar nahoře a dole: jemná zelená záře za kartami, která se ztrácí do černé (i přes horní okraj patičky) */
+.sp-teaser{position:relative;z-index:3;background:radial-gradient(ellipse 75% 65% at 50% 55%,rgba(0,138,63,.13) 0%,rgba(0,138,63,.05) 45%,rgba(0,0,0,0) 75%);border:0;padding:72px 40px}
+.sp-teaser+footer{border-top:0}
+.sp-teaser+footer::before{content:'';position:absolute;left:0;right:0;bottom:100%;height:160px;background:linear-gradient(to bottom,rgba(0,0,0,0),#000);pointer-events:none}
 .sp-teaser-in{max-width:1320px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:28px}
 .sp-tc{display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:150px;padding:34px 40px;border-radius:28px;background:linear-gradient(120deg,#1c1c1c 0%,#0f0f0f 45%,#04331a 100%);background-origin:border-box;border:1px solid rgba(0,200,83,.22);text-decoration:none;color:#fff;box-shadow:0 18px 50px rgba(0,0,0,.35);transition:transform .2s cubic-bezier(.32,.72,0,1),border-color .2s;touch-action:manipulation;min-width:0}
 .sp-tc:hover{transform:translateY(-3px);border-color:rgba(0,200,83,.45);box-shadow:0 22px 60px rgba(0,138,63,.22)}
@@ -1370,6 +1387,94 @@ body.ac-lock{overflow:hidden}
 /* tvar tlačítek jako zbytek e-shopu (ostré rohy) */
 .sp-tc,.sp-ta-btn,.sp-send,.sp-chip,.sp-switch,.sp-switch a,.sp-ck{border-radius:0}
 @media(max-width:600px){.sp-tc,.sp-ta-btn{border-radius:0}}
+/* ---------- Hodnocení objednávky (/objednavka/<kód>) a hodnocení u produktů ---------- */
+.rv-page{max-width:640px}
+.rv-head{text-align:center;margin:8px 0 22px}
+.rv-head .page-sub{margin-left:auto;margin-right:auto}
+.rv-meta{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.06em;color:var(--muted);margin-bottom:10px}
+.rv-meta b{color:#fff;font-weight:600}
+.rv-badge{display:inline-flex;align-items:center;gap:8px;margin-top:14px;height:30px;padding:0 14px;border-radius:999px;font-size:13px;font-weight:700;color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent)}
+.rv-badge::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--c)}
+.rv-card{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:22px 22px 20px;margin-bottom:14px;animation:rvIn .35s cubic-bezier(.2,.8,.2,1) both}
+.rv-card h2{font-family:'Archivo Black',sans-serif;font-size:17px;text-transform:none;letter-spacing:0;margin:0 0 4px;color:#fff}
+.rv-card h2 small{font-family:inherit;font-weight:400;font-size:13px;color:var(--muted)}
+.rv-card p{margin:0;color:var(--muted);font-size:14px;line-height:1.5}
+.rv-card label{display:block;cursor:text}
+@keyframes rvIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.rv-stars{display:flex;justify-content:center;gap:6px;margin:14px 0 4px}
+.rv-stars button{width:56px;height:56px;border:0;background:transparent;font-size:46px;line-height:1;color:#3a3a3a;cursor:pointer;border-radius:14px;padding:0;touch-action:manipulation;transition:transform .25s cubic-bezier(.34,1.56,.64,1),color .15s}
+.rv-stars button.on{color:#f5b301;text-shadow:0 0 18px rgba(245,179,1,.35)}
+.rv-stars button:active{transform:scale(.88)}
+.rv-stars button[aria-checked="true"]{transform:scale(1.12)}
+.rv-stars button:focus-visible,.rv-thumbs button:focus-visible{outline:3px solid var(--green-glow);outline-offset:2px}
+@media (hover:hover){.rv-stars:hover button{color:#f5b301}.rv-stars button:hover~button{color:#3a3a3a;text-shadow:none}}
+.rv-scale{display:flex;justify-content:space-between;align-items:center;max-width:300px;margin:0 auto;font-size:12px;color:var(--muted)}
+.rv-scale b{font-size:14px;color:#f5b301;font-weight:700}
+.rv-row{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.rv-thumbs{display:flex;gap:10px;flex-shrink:0}
+.rv-thumbs button{width:58px;height:52px;border-radius:16px;border:1px solid var(--border);background:#1a1a1a;font-size:24px;cursor:pointer;touch-action:manipulation;transition:transform .2s cubic-bezier(.34,1.56,.64,1),background .15s,border-color .15s;filter:grayscale(.6)}
+.rv-thumbs button:active{transform:scale(.9)}
+.rv-thumbs button.on{filter:none;transform:scale(1.06)}
+.rv-thumbs button.up{background:rgba(0,200,83,.15);border-color:var(--green-glow)}
+.rv-thumbs button.down{background:rgba(229,57,53,.15);border-color:var(--red)}
+.rv-card textarea{display:block;width:100%;box-sizing:border-box;margin-top:12px;min-height:110px;padding:14px 16px;border-radius:16px;border:1px solid #2a2a2a;background:#0a0a0a;color:#fff;font-size:16px;line-height:1.5;font-family:inherit;resize:vertical;outline:none}
+.rv-card textarea:focus{border-color:var(--green-glow);box-shadow:0 0 0 3px rgba(0,200,83,.15)}
+.rv-cnt{min-height:16px;margin-top:6px;font-size:12px;color:var(--muted);text-align:right}
+.rv-note{margin-top:6px!important;font-size:13px!important}
+.rv-note b{color:#fff}
+.rv-send{width:100%;margin-top:16px;min-height:52px}
+.rv-items .rv-item{display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+.rv-thumb{width:52px;height:52px;border-radius:12px;overflow:hidden;background:#1a1a1a;border:1px solid var(--border)}
+.rv-thumb>*{width:100%;height:100%}
+.rv-thumb img{width:100%;height:100%;object-fit:cover}
+.rv-iname b{display:block;color:#fff;font-weight:600;font-size:15px}
+.rv-iname small{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+.rv-iprice{font-weight:700;white-space:nowrap}
+.rv-total{display:flex;justify-content:space-between;padding-top:14px;font-weight:700}
+.rv-total b{color:var(--green-glow)}
+.rv-items h2{margin-bottom:6px}
+.rv-help{background:rgba(255,152,0,.08);border:1px solid rgba(255,152,0,.25);border-radius:20px;padding:18px 20px;font-size:14px;line-height:1.6;color:#ddd;margin-bottom:16px}
+.rv-help b{color:#fff}
+.rv-help div{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.rv-help .btn{border-radius:999px;text-transform:none;letter-spacing:0;overflow-wrap:anywhere}
+.rv-out{text-align:center;font-size:13px;color:var(--muted);margin:10px 0 30px}
+.rv-out a{color:var(--muted);text-decoration:underline;cursor:pointer}
+.rv-flash{display:flex;gap:12px;align-items:flex-start;padding:16px 18px;border-radius:20px;background:#141414;border:1px solid var(--border);margin-bottom:14px;animation:rvIn .35s cubic-bezier(.2,.8,.2,1) both}
+.rv-flash svg{flex-shrink:0;color:var(--green-glow)}
+.rv-flash b{display:block;color:#fff;margin-bottom:2px}
+.rv-flash span{font-size:14px;color:var(--muted)}
+.rv-flash.ok{background:rgba(0,200,83,.1);border-color:rgba(0,200,83,.35)}
+.rv-flash.bad{background:rgba(229,57,53,.1);border-color:rgba(229,57,53,.4)}
+.rv-empty{text-align:center;padding:50px 0}
+.rv-empty .page-sub{margin:0 auto 22px}
+.rv-ico{font-size:44px;margin-bottom:10px}
+.rv-load{display:flex;align-items:center;justify-content:center;gap:12px;padding:80px 0;color:var(--muted)}
+.rv-load i{width:22px;height:22px;border-radius:50%;border:3px solid rgba(0,200,83,.2);border-top-color:var(--green-glow);animation:rvSpin .8s linear infinite}
+@keyframes rvSpin{to{transform:rotate(360deg)}}
+.rv-muted{color:var(--muted)}
+.rv-st{display:inline-flex;gap:1px;font-size:var(--s);line-height:1;vertical-align:middle}
+.rv-st i{font-style:normal;color:#3a3a3a}
+.rv-st i.on{color:#f5b301}
+/* u produktu */
+.rv-prod{margin-top:56px;padding-top:36px;border-top:1px solid var(--border)}
+.rv-ph{font-family:'Archivo Black',sans-serif;font-size:24px;text-transform:uppercase;margin:0 0 18px}
+.rv-sum{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+.rv-avg{font-family:'Archivo Black',sans-serif;font-size:48px;line-height:1}
+.rv-sum span:not(.rv-st){display:block;margin-top:6px;font-size:13px;color:var(--muted)}
+.rv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.rv-pub{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:18px 18px 16px}
+.rv-pub-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:12px;color:var(--muted)}
+.rv-pub p{margin:0 0 12px;font-size:15px;line-height:1.55;color:#e6e6e6;overflow-wrap:anywhere;white-space:pre-line}
+.rv-pub b{font-size:14px;color:#fff}
+.rv-pub small{display:block;font-size:12px;color:var(--green-glow);margin-top:2px}
+.rv-more{margin-top:16px;border-radius:999px}
+@media (max-width:520px){
+  .rv-card{padding:18px 16px;border-radius:20px}
+  .rv-stars{gap:2px}.rv-stars button{width:52px;height:52px;font-size:42px}
+  .rv-row{flex-direction:column;align-items:flex-start}
+  .rv-thumbs{width:100%}.rv-thumbs button{flex:1}
+}
+@media (prefers-reduced-motion:reduce){.rv-card,.rv-flash{animation:none}.rv-stars button,.rv-thumbs button{transition:none}}
 </style>
 </head>
 <body>
@@ -1411,7 +1516,7 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ============== STAGING ŠTÍTEK ==============
 if(HOPI_IS_STAGE){
-  document.title = '[TEST] ' + document.title;
+  if(!/^\[TEST\]/.test(document.title))document.title = '[TEST] ' + document.title;
   document.addEventListener('DOMContentLoaded', () => {
     const b = document.createElement('div');
     b.textContent = '🧪 TESTOVACÍ PROSTŘEDÍ';
@@ -2051,14 +2156,10 @@ Tým {nazev_shopu}`,
   },
   delivered:{
     enabled:true,
-    subject:`Objednávka #{cislo} je doručená 💚`,
+    subject:`Jak se ti líbí objednávka #{cislo}? ⭐`,
     body:`Ahoj {jmeno},
 
-balík dorazil. Doufáme, že ti merch udělá radost!
-
-Kdyby cokoliv nesedělo, napiš nám na {email_shopu} a vyřešíme to.
-
-Tým {nazev_shopu}`,
+balík by měl být u tebe. Doufáme, že ti merch udělá radost! Dej nám prosím vědět, jak jsi spokojený(á) – zabere to pár vteřin a pomůže nám to zlepšovat.`,
   },
   cancelled:{
     enabled:true,
@@ -2233,11 +2334,52 @@ function hvMailPayBox(order){
   }
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px;background:#e9f6ee;border-radius:14px"><tr><td style="padding:16px 18px;font-family:${F};font-size:15px;line-height:1.5;color:#0d5a2c"><b>&#10003; Zaplaceno kartou.</b> Nic dalšího neřešíš.</td></tr></table>`;
 }
+// E-mail „Doručeno“ s žádostí o hodnocení (hvězdy a palce jsou odkazy na stránku objednávky /objednavka/<token>)
+function hvMailReview(order,template,site,subject){
+  const F=HV_MAIL_FONT; const s=getSettings(); const mail=s.email||'eshophopivirtual@gmail.com';
+  const base=site.replace(/[#?].*$/,'').replace(/[^/]*$/,'')+'objednavka/'+encodeURIComponent(order.reviewToken);
+  const bodyText=fillTemplate(String(template.body||'').split('{platebni_instrukce}').join(''),order);
+  const star=n=>`<td align="center" style="padding:0 3px"><a href="${hvMailEsc(base+'?hodnoceni='+n)}" target="_blank" title="${n} z 5" style="display:block;font-family:Arial,sans-serif;font-size:42px;line-height:48px;color:#f5b301;text-decoration:none">&#9733;</a></td>`;
+  const thumb=(v,ch,lab)=>`<td align="center" width="56" style="padding:0 0 0 8px"><a href="${hvMailEsc(base+'?doruceni='+v)}" target="_blank" title="${lab}" style="display:block;width:52px;height:46px;line-height:46px;background:#ffffff;border:1px solid #e3e3e6;border-radius:12px;font-size:22px;text-decoration:none;text-align:center">${ch}</a></td>`;
+  const products=getProducts();
+  const items=(order.items||[]).map(i=>{
+    const p=products.find(x=>String(x.id)===String(i.productId));
+    const price=Number(i.price)>0?Number(i.price)*i.qty:(p?Number(p.price)*i.qty:0);
+    return `<tr><td width="40" style="padding:10px 0;vertical-align:top"><span style="display:inline-block;min-width:30px;padding:5px 0;border-radius:8px;background:#f2f2f2;font-family:${F};font-size:13px;font-weight:800;color:#111;text-align:center">${Number(i.qty)||1}&times;</span></td>
+      <td style="padding:10px 10px;vertical-align:top;font-family:${F};font-size:15px;line-height:1.35;color:#111"><b>${hvMailEsc(p?p.name:(i.name||'Produkt'))}</b>${i.size?`<br><span style="font-size:13px;color:#8e8e93">Velikost ${hvMailEsc(i.size)}</span>`:''}</td>
+      <td style="padding:10px 0;vertical-align:top;font-family:${F};font-size:15px;font-weight:700;color:#111;text-align:right;white-space:nowrap">${price?formatPrice(price)+' Kč':''}</td></tr>`;
+  }).join('');
+  const dt=order.date?new Date(order.date):null;
+  const when=dt&&!isNaN(dt)?dt.toLocaleDateString('cs-CZ',{day:'numeric',month:'numeric',year:'numeric'}):'';
+  const inner=`${hvMailText(bodyText)}
+   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 18px;border:1px solid #ececec;border-radius:16px"><tr><td align="center" style="padding:22px 16px 20px">
+    <p style="margin:0 0 4px;font-family:${F};font-size:20px;font-weight:900;color:#111">Jak hodnotíš objednávku?</p>
+    <p style="margin:0 0 12px;font-family:${F};font-size:14px;color:#6b6b70">Klepni na počet hvězd</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${[1,2,3,4,5].map(star).join('')}</tr></table>
+    <table role="presentation" width="270" cellpadding="0" cellspacing="0" border="0" style="margin:2px auto 0"><tr><td style="font-family:${F};font-size:12px;color:#8e8e93">Nic moc</td><td style="font-family:${F};font-size:12px;color:#8e8e93;text-align:right">Skvělé</td></tr></table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 0;background:#f6f7f6;border-radius:14px"><tr>
+     <td style="padding:14px 16px;text-align:left;font-family:${F};font-size:16px;font-weight:800;color:#111">A co doručení?<br><span style="font-size:13px;font-weight:400;color:#6b6b70">Rychlost, balení, stav zásilky</span></td>
+     ${thumb(1,'&#128077;','Spokojený')}${thumb(-1,'&#128078;','Nespokojený')}<td width="14"></td>
+    </tr></table>
+    <p style="margin:16px 0 0;font-family:${F};font-size:15px;font-weight:800"><a href="${hvMailEsc(base)}" target="_blank" style="color:#00853f;text-decoration:none">Otevřít formulář hodnocení &rarr;</a></p>
+   </td></tr></table>
+   <p style="margin:12px 0 4px;font-family:${F};font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#8e8e93">Hodnotíš objednávku</p>
+   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #ececec">${items}</table>
+   <p style="margin:10px 0 18px;font-family:${F};font-size:13px;color:#8e8e93">${when?'Objednáno '+hvMailEsc(when)+' &middot; ':''}celkem ${formatPrice(order.total)} Kč</p>
+   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px;background:#fff6e5;border-radius:14px"><tr><td style="padding:16px 18px;font-family:${F};font-size:15px;line-height:1.55;color:#111">
+    <b>Něco nebylo v pořádku?</b> Napiš to do hodnocení. Spěchá to? Ozvi se nám.<br>
+    <a href="${hvMailEsc(site.replace(/[#?].*$/,'').replace(/[^/]*$/,'')+'#complaint?order='+encodeURIComponent(order.id))}" target="_blank" style="color:#00853f;font-weight:800;text-decoration:none">Reklamace</a> <span style="color:#c7c7cc">&middot;</span> <a href="mailto:${hvMailEsc(mail)}" style="color:#00853f;font-weight:800;text-decoration:none">${hvMailEsc(mail)}</a>
+   </td></tr></table>`;
+  const foot=`Tenhle e-mail ti přišel, protože jsi u nás nakoupil(a). O hodnocení téhle objednávky tě žádáme jen jednou.<br><a href="${hvMailEsc(base+'?odhlasit=1')}" target="_blank" style="color:#9a9a9a;text-decoration:underline">Nechci dostávat žádosti o hodnocení</a> &ndash; e-maily o objednávkách chodit budou dál.`;
+  return hvMailShell({subject,preheader:'Dej nám vědět, jak jsi spokojený(á). Zabere to pár vteřin.',tag:'Doručeno'+(when?' · objednáno '+when:''),title:'Jak se ti líbí?',band:'#00853f',
+    ref:order.id,site,progress:hvMailProgress('delivered'),inner,footNote:foot});
+}
 function buildEmailHTML(order,template){
   const s=getSettings(); const F=HV_MAIL_FONT;
   const status=order.status||'new';
   const site=(typeof hvSiteUrl==='function'?hvSiteUrl():location.origin+'/');
   const subject=fillTemplate(template.subject,order);
+  if(status==='delivered'&&order.reviewToken&&!order._reviewOptOut)return hvMailReview(order,template,site,subject);
   // platební instrukce se vykreslí jako box (na jejich místě v textu, jinak pod textem u nové objednávky)
   const rawBody=String(template.body||'');
   const hasPay=rawBody.includes('{platebni_instrukce}');
@@ -2405,6 +2547,7 @@ async function sendStatusEmail(order,newStatus,options={}){
       if(!res.ok||!d.ok)throw new Error(d.error||('Server vrátil chybu '+res.status));
       if(d.subject)logEntry.subject=d.subject;
       if(d.html)logEntry.bodyHTML=d.html;
+      if(d.status==='scheduled'&&d.sendAt)logEntry.scheduledAt=d.sendAt;
       logEntry.success=true;
     }else if(config.mode==='emailjs'&&config.emailjsServiceId&&config.emailjsTemplateId&&config.emailjsPublicKey){
       // Skutečné odeslání přes EmailJS
@@ -2463,7 +2606,24 @@ async function sendStatusEmail(order,newStatus,options={}){
     setOrders(orders);
   }
 
-  return {ok:logEntry.success,reason:logEntry.success?'sent':logEntry.error,logEntry};
+  return {ok:logEntry.success,reason:logEntry.success?'sent':logEntry.error,logEntry,scheduledAt:logEntry.scheduledAt||null};
+}
+// Toast po změně stavu: naplánovaná žádost o hodnocení vs. odeslaný e-mail
+function hvMailToast(r){
+  if(r.ok&&r.scheduledAt){const d=new Date(r.scheduledAt),t=new Date();const same=d.toDateString()===t.toDateString(),tm=new Date(t.getTime()+864e5).toDateString()===d.toDateString();
+    showToast('⭐ Žádost o hodnocení odejde '+(same?'dnes':tm?'zítra':d.toLocaleDateString('cs-CZ',{day:'numeric',month:'numeric'}))+' v '+d.toLocaleTimeString('cs-CZ',{hour:'2-digit',minute:'2-digit'}));return}
+  if(r.ok)showToast('📧 E-mail zákazníkovi odeslán');
+  else if(r.reason&&r.reason!=='already_sent'&&r.reason!=='disabled_for_status'&&r.reason!=='no_email')showToast('⚠️ E-mail se nepodařilo odeslat','error');
+}
+// Vrácený / zrušený stav „Doručeno“ → server zruší naplánovanou žádost o hodnocení
+async function hvUnscheduleReview(orderId){
+  try{
+    if(getEmailConfig().mode!=='resend')return;
+    const tok=await hvUserToken();
+    const res=await fetch(SUPABASE_URL+'/functions/v1/send-notification',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,'x-user-token':tok||''},body:JSON.stringify({action:'customer_unschedule',ref:orderId})});
+    const d=await res.json().catch(()=>({}));
+    if(d&&d.cancelled)showToast('Naplánovaná žádost o hodnocení zrušena');
+  }catch(e){}
 }
 
 // === iDoklad: odeslání faktury emailem zákazníkovi přes novou Edge Function ===
@@ -2563,12 +2723,7 @@ async function advanceOrderStatus(orderId){
   }
 
   // === OSTATNÍ STAVY ===
-  sendStatusEmail(o,s.next).then(r=>{
-    if(r.ok)showToast('📧 E-mail zákazníkovi odeslán');
-    else if(r.reason&&r.reason!=='already_sent'&&r.reason!=='disabled_for_status'&&r.reason!=='no_email'){
-      showToast('⚠️ E-mail se nepodařilo odeslat','error');
-    }
-  });
+  sendStatusEmail(o,s.next).then(hvMailToast);
 }
 
 // ⭐ Vrátit krok objednávky zpět (např. Zpracovává se → Přijato)
@@ -2581,6 +2736,7 @@ function revertOrderStatus(orderId){
   const prev=PREV_STATUS[o.status];
   if(!prev)return;
   if(!confirm(`Vrátit stav objednávky zpět na "${STATUSES[prev].label}"?`))return;
+  if(o.status==='delivered')hvUnscheduleReview(o.id);
   o.status=prev;
   o.statusHistory=o.statusHistory||[];
   o.statusHistory.push({status:prev,at:Date.now(),reverted:true});
@@ -2596,6 +2752,7 @@ function cancelOrder(orderId){
   const orders=getOrders();
   const o=orders.find(x=>x.id===orderId);
   if(!o)return;
+  if(o.status==='delivered')hvUnscheduleReview(o.id);
   o.status='cancelled';
   o.statusHistory=o.statusHistory||[];
   o.statusHistory.push({status:'cancelled',at:Date.now()});
@@ -3114,29 +3271,53 @@ async function syncOrdersFromSheets(){
 
 // ============== ROUTER ==============
 function hvRoot(){return window.HV_ROOT||location.pathname.replace(/[^/]*$/,'')}
+// Adresa produktu: produkt/12-mikina-hopi-virtual (číslo = id, zbytek jen pro lidi a Google)
+function hvSlug(s){return String(s||'').normalize('NFKD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80).replace(/-+$/,'')}
+function hvProductPath(id){const p=getProduct(id),sl=p?hvSlug(p.name):'';return 'produkt/'+Number(id)+(sl?'-'+sl:'')}
+window.hvProductUrl=function(id){return location.origin+hvRoot()+hvProductPath(id)};
+// Čistá adresa pro stránku zadanou jako hash (#spoluprace/ridic, #product?id=12) – jinak null
+function hvPrettyOf(hash){
+  const sp=hash.match(/^spoluprace\/(ridic|firma)$/);if(sp)return 'spoluprace/'+sp[1];
+  const pm=hash.match(/^product\?id=(\d+)$/);if(pm)return hvProductPath(pm[1]);
+  const ob=hash.match(/^objednavka\/([A-Za-z0-9]{24,64})$/);if(ob)return 'objednavka/'+ob[1];
+  return null;
+}
+// Stránka podle čisté adresy (bez #) – jinak null
+function hvPathRoute(){try{
+  const r=hvRoot(),p=decodeURIComponent(location.pathname);if(p.indexOf(r)!==0)return null;
+  const rel=p.slice(r.length);let m;
+  if((m=rel.match(/^spoluprace\/(ridic|řidič|firma)\/?$/i)))return {path:'spoluprace/'+(/firma/i.test(m[1])?'firma':'ridic'),params:{}};
+  if((m=rel.match(/^produkt\/(\d+)(?:-[^\/]*)?\/?$/i)))return {path:'product',params:{id:m[1]}};
+  if((m=rel.match(/^objednavka\/([A-Za-z0-9]{24,64})\/?$/)))return {path:'objednavka',params:{token:m[1]}};
+  return null;
+}catch(e){return null}}
 // Je adresa čistá stránka Spolupráce (/spoluprace/ridic nebo /spoluprace/firma)? → 'ridic' / 'firma' / ''
-function hvSpPathForm(){try{const r=hvRoot(),p=decodeURIComponent(location.pathname);if(p.indexOf(r)!==0)return '';const m=p.slice(r.length).match(/^spoluprace\/(ridic|řidič|firma)\/?$/i);return m?(/firma/i.test(m[1])?'firma':'ridic'):''}catch(e){return ''}}
+function hvSpPathForm(){const r=hvPathRoute();return r&&/^spoluprace\//.test(r.path)?r.path.split('/')[1]:''}
 function getRoute(){
   const raw=(location.hash||'').replace('#','');
-  if(!raw){const f=hvSpPathForm();if(f)return {path:'spoluprace/'+f,params:{}}}
+  if(!raw){const r=hvPathRoute();if(r)return r}
   const h=raw||'home';
   const [path,query]=h.split('?');
   const params={};
   if(query)query.split('&').forEach(kv=>{const[k,v]=kv.split('=');params[k]=decodeURIComponent(v||'')});
   return {path:path||'home',params};
 }
-// Spolupráce má čistou adresu bez # → #spoluprace/… se přepíše na /spoluprace/…, a jinde se z /spoluprace/… vrátí na kořen webu
+// Čisté adresy: #spoluprace/… a #product?id=… se přepíší na /spoluprace/… a /produkt/…, jinde se z čisté adresy vrátí na kořen webu
 function hvCanonUrl(){try{
-  const h=(location.hash||'').replace(/^#/,''),hm=h.match(/^spoluprace\/(ridic|firma)$/),f=hvSpPathForm();
-  if(hm)history.replaceState(history.state,'',hvRoot()+'spoluprace/'+hm[1]+location.search);
-  else if(f&&h)history.replaceState(history.state,'',hvRoot()+location.search+location.hash);
+  const h=(location.hash||'').replace(/^#/,''),pretty=h?hvPrettyOf(h):null,cur=hvPathRoute();
+  if(pretty)history.replaceState(history.state,'',hvRoot()+pretty+location.search);
+  else if(cur&&h)history.replaceState(history.state,'',hvRoot()+location.search+location.hash);
+  else if(cur&&cur.path==='product'&&getProduct(cur.params.id)){   // starý nebo chybějící název v adrese → správný
+    const want=hvRoot()+hvProductPath(cur.params.id);
+    if(decodeURIComponent(location.pathname).replace(/\/$/,'')!==want)history.replaceState(history.state,'',want+location.search);
+  }
 }catch(e){}}
 // Přechod na jinou stránku: hned nahoru (bez animace – plynulý posun se při překreslení stránky zastavil v půlce)
 function go(hash){
   hash=String(hash==null?'':hash).replace(/^#/,'');
-  const sp=hash.match(/^spoluprace\/(ridic|firma)$/);
-  if(sp||hvSpPathForm()){
-    const target=sp?hvRoot()+'spoluprace/'+sp[1]+location.search:hvRoot()+location.search+(hash?'#'+hash:'');
+  const pretty=hash?hvPrettyOf(hash):null;
+  if(pretty||hvPathRoute()){
+    const target=pretty?hvRoot()+pretty+location.search:hvRoot()+location.search+(hash?'#'+hash:'');
     if(location.pathname+location.search+location.hash===target){window.scrollTo({top:0,behavior:'smooth'});return}
     try{history.pushState(null,'',target)}catch(e){location.href=target;return}
     render();return;
@@ -3155,8 +3336,58 @@ document.addEventListener('click',function(e){
   if(location.pathname===hvRoot()&&!location.search)return;
   e.preventDefault();
   const h=a.getAttribute('href').slice(1);
-  if(hvSpPathForm()||/^spoluprace\//.test(h))go(h);else location.hash=h;
+  if(hvPathRoute()||hvPrettyOf(h))go(h);else location.hash=h;
 });
+
+
+// ============== SEO: hlavička podle stránky ==============
+// Pro Google (vykresluje JavaScript) a pro záložku v prohlížeči. Surové HTML úvodu a produktů
+// na ostrém webu připravuje Netlify Edge Function „seo“ (netlify/edge-functions/seo.ts) – stejné údaje.
+const HV_SEO_INDEX=['home','product','info','spoluprace/ridic','spoluprace/firma'];
+const HV_SEO_DESC='Oficiální merch HOPI VIRTUAL. Prémiové materiály, poctivá práce a rychlé doručení po celé ČR a SR.';
+function hvSeoMeta(sel,attr,name,val){
+  let el=document.head.querySelector(sel);
+  if(val==null){if(el)el.remove();return}
+  if(!el){el=document.createElement(sel.startsWith('link')?'link':'meta');el.setAttribute(attr,name);document.head.appendChild(el)}
+  el.setAttribute(sel.startsWith('link')?'href':'content',val);
+}
+function hvSeoImg(p){const im=(p&&(p.images&&p.images.length?p.images:(p.photo?[p.photo]:[])))||[];const u=im.find(x=>/^https?:\/\//i.test(String(x||'')));return u||(location.origin+hvRoot()+'logo-hero.png')}
+function hvSeoClip(t,n){t=String(t||'').replace(/\s+/g,' ').trim();return t.length>n?t.slice(0,n-1).replace(/\s+\S*$/,'')+'…':t}
+function hvSeoApply(path,params){
+  const root=location.origin+hvRoot();
+  let title='HOPI VIRTUAL – oficiální merch e-shop',desc=HV_SEO_DESC,canon=root,img=root+'logo-hero.png',type='website',ld=null;
+  if(path==='product'){
+    const p=getProduct(params&&params.id);
+    if(p){
+      const st=stockStatus(p);
+      title=`${p.name} | HOPI VIRTUAL merch`;
+      desc=hvSeoClip(p.description?p.description:`${p.name} – oficiální merch HOPI VIRTUAL za ${formatPrice(p.price)} Kč. ${st.count===0?'Momentálně vyprodáno.':'Skladem, doručení po celé ČR a SR.'}`,158);
+      canon=root+hvProductPath(p.id);img=hvSeoImg(p);type='product';
+      const ims=((p.images&&p.images.length?p.images:(p.photo?[p.photo]:[]))||[]).filter(x=>/^https?:\/\//i.test(String(x||'')));
+      ld={"@context":"https://schema.org","@type":"Product","name":p.name,"description":desc,"sku":String(p.id),"url":canon,
+        "brand":{"@type":"Brand","name":"HOPI VIRTUAL"},...(ims.length?{"image":ims}:{}),...(p.categoryLabel||p.category?{"category":String(p.categoryLabel||p.category)}:{}),
+        "offers":{"@type":"Offer","url":canon,"priceCurrency":"CZK","price":Number(p.price)||0,"itemCondition":"https://schema.org/NewCondition",
+          "availability":st.count===0?"https://schema.org/OutOfStock":"https://schema.org/InStock","seller":{"@type":"Organization","name":"HOPI VIRTUAL"}}};
+      const rvl=typeof hvRvLd==='function'?hvRvLd(p.id):null;if(rvl)Object.assign(ld,rvl);   // jen skutečná schválená hodnocení
+    }else{title='Produkt nenalezen | HOPI VIRTUAL'}
+  }else if(path==='spoluprace/ridic'){title='Nábor řidičů do virtuální firmy HOPI VIRTUAL (ETS2)';desc='Jezdi s námi konvoje v Euro Truck Simulator 2. Vyplň přihlášku do HOPI VIRTUAL – pravidla, výhody a jak to u nás chodí.';canon=root+'spoluprace/ridic'}
+  else if(path==='spoluprace/firma'){title='Spolupráce s virtuálními firmami | HOPI VIRTUAL';desc='Máte virtuální kamionovou firmu? Pojeďme spolu – společné konvoje, vzájemná propagace a eventy s HOPI VIRTUAL.';canon=root+'spoluprace/firma'}
+  else if(path!=='home'){const h=document.querySelector('#app h1');title=(h&&h.textContent.trim()?hvSeoClip(h.textContent,50)+' | ':'')+'HOPI VIRTUAL'}
+  document.title=(HOPI_IS_STAGE?'[TEST] ':'')+title;
+  const idx=!HOPI_IS_STAGE&&HV_SEO_INDEX.includes(path)&&!(path==='product'&&!getProduct(params&&params.id));
+  hvSeoMeta('meta[name="robots"]','name','robots',idx?null:'noindex,nofollow');
+  hvSeoMeta('meta[name="description"]','name','description',desc);
+  hvSeoMeta('link[rel="canonical"]','rel','canonical',canon);
+  hvSeoMeta('meta[property="og:type"]','property','og:type',type);
+  hvSeoMeta('meta[property="og:title"]','property','og:title',title);
+  hvSeoMeta('meta[property="og:description"]','property','og:description',desc);
+  hvSeoMeta('meta[property="og:url"]','property','og:url',canon);
+  hvSeoMeta('meta[property="og:image"]','property','og:image',img);
+  document.querySelectorAll('script[data-edge]').forEach(x=>x.remove());   // údaje ze serveru (Edge Function) nahradí tyhle
+  let s=document.getElementById('hvLdProduct');
+  if(ld){if(!s){s=document.createElement('script');s.type='application/ld+json';s.id='hvLdProduct';document.head.appendChild(s)}s.textContent=JSON.stringify(ld)}
+  else if(s)s.remove();
+}
 
 // ============== GLOBÁLNÍ APP SETTINGS (Supabase) ==============
 // KRITICKÉ: Admin nastavení (GoPay, platební metody, Snipcart) MUSÍ být v Supabase,
@@ -3229,16 +3460,42 @@ async function saveAppSetting(key, value){
   }
 }
 
-// Před prvním renderem zkusíme načíst produkty a objednávky ze Supabase
-window.addEventListener('load', async () => {
-  await checkAdminSession(); // ověřit session: admin / zákazník / nikdo
-  hvHandleAuthLinkOnBoot();   // návrat z e-mailu (potvrzení, chyba odkazu)
+// Start e-shopu – hned po načtení HTML, ne až po všech obrázcích, fontech a chatu (událost „load“ přišla o 1–2 s později).
+// Opakovaná návštěva: stránka se ukáže hned z uložené kopie (produkty + nastavení v localStorage)
+// a po načtení čerstvých dat ze Supabase se překreslí, jen když se něco změnilo.
+// Pokladna, platba, účet, admin a návraty z e-mailu/platby čekají na čerstvá data jako dřív.
+const HV_FAST_PAGES=['home','product','info','cart','complaint','spoluprace/ridic','spoluprace/firma'];
+function hvCanRenderFromCache(){
+  try{
+    if(!localStorage.getItem('hopi_app_settings_cache')||!localStorage.getItem('hopi_products'))return false;
+    if(/access_token|refresh_token|error_code|error=|type=(signup|email|recovery|magiclink|invite)/.test(_hvBootHash))return false;
+    if(typeof HV_INIT_GPRETURN!=='undefined'&&HV_INIT_GPRETURN)return false;
+    if(getAdminUser())return false;
+    return HV_FAST_PAGES.includes(getRoute().path);
+  }catch(e){return false}
+}
+function hvBootSig(){
+  try{const u=getUser(),a=getAdminUser();return JSON.stringify([_appSettingsCache,JSON.parse(localStorage.getItem('hopi_products')||'null'),u?u.email+'|'+(u.firstName||''):'',a?a.email:''])}catch(e){return String(Math.random())}
+}
+let _hvBooted=false;
+async function hvBoot(){
+  if(_hvBooted)return; _hvBooted=true;
+  let fastSig=null;
+  if(hvCanRenderFromCache()){
+    try{_loadAppSettingsFromLocalStorage();fastSig=hvBootSig();render()}catch(e){console.warn('Rychlé vykreslení:',e);fastSig=null}
+  }
+  // vše najednou: přihlášení + nastavení + produkty + objednávky
   await Promise.all([
+    checkAdminSession().then(()=>hvHandleAuthLinkOnBoot()), // admin / zákazník / nikdo; návrat z e-mailu
     loadAppSettings(),         // ← KRITICKÉ — musí být před render (zákazník potřebuje vědět, jestli je GoPay aktivní)
     syncProductsFromSupabase(),
     syncOrdersFromSupabase()
   ]);
-  render();
+  if(fastSig===null||hvBootSig()!==fastSig)render();
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',hvBoot);else hvBoot();
+window.addEventListener('load',hvBoot); // pojistka
+{
   
   // Snipcart event listener — když přijde objednávka, uložíme ji do Supabase
   document.addEventListener('snipcart.ready', () => {
@@ -3290,7 +3547,7 @@ window.addEventListener('load', async () => {
       saveSnipcartOrder(snipOrder);
     });
   });
-});
+}
 
 // Konvertuje Snipcart objednávku do našeho formátu a uloží do Supabase
 async function saveSnipcartOrder(snipOrder){
@@ -3340,7 +3597,7 @@ function render(){
   const {path,params}=getRoute();
   const views={
     home:viewHome,product:viewProduct,cart:viewCart,checkout:viewCheckout,success:viewSuccess,'payment-cancelled':viewPaymentCancelled,'gopay-return':viewGoPayWait,'gopay-done':viewGoPayDone,
-    track:viewTrack,trackOrder:viewTrackOrder,
+    track:viewTrack,trackOrder:viewTrackOrder,objednavka:viewOrderReview,
     login:viewLogin,register:viewRegister,account:viewAccount,info:viewInfo,
     complaint:viewComplaint,
     'spoluprace/ridic':()=>viewSpoluprace('ridic'),'spoluprace/firma':()=>viewSpoluprace('firma'),
@@ -3353,6 +3610,7 @@ function render(){
   if(path!=='admin'&&document.getElementById('hvSheet')){try{hvSheetClose()}catch(e){}}
   if(path.startsWith('spoluprace/')&&typeof _spS!=='undefined'&&_spS&&_spS.done&&window._hvLastPage!==key)_spS=null;
   (views[path]||viewHome)(params);
+  try{hvSeoApply(views[path]?path:'home',params)}catch(e){console.warn('SEO:',e)}
   try{hvTrack(views[path]?path:'home',params)}catch(e){}
   // nová stránka (nebo jiný produkt) → začít nahoře
   if(window._hvLastPage!==undefined&&window._hvLastPage!==key)hvScrollTopNow();
@@ -3514,7 +3772,7 @@ function renderProductCard(p){
   const stock=stockStatus(p);
   const soldOut=stock.count===0;
   return `
-    <a class="product ${soldOut?'out-of-stock':''}" data-cat="${escapeHtml(p.category)}" onclick="go('product?id=${p.id}')">
+    <a class="product ${soldOut?'out-of-stock':''}" data-cat="${escapeHtml(p.category)}" href="${hvProductPath(p.id)}" onclick="if(event.metaKey||event.ctrlKey||event.shiftKey||event.button)return;event.preventDefault();go('product?id=${p.id}')">
       <div class="product-img">
         ${p.badge&&!soldOut?`<div class="product-badge">${escapeHtml(p.badge)}</div>`:''}
         ${getMockHTML(p)}
@@ -3758,10 +4016,6 @@ function viewProduct({id}){
         <div>
           <div class="info-category">${escapeHtml(product.categoryLabel||product.category)}</div>
           <h1 class="info-title">${escapeHtml(product.name)}</h1>
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;font-size:14px;color:var(--muted)">
-            <span style="color:#ffc107;letter-spacing:2px">★★★★★</span>
-            <span>4.8 · 127 hodnocení</span>
-          </div>
           <div class="info-price">${formatPrice(product.price)}<span class="currency">Kč</span></div>
           <div class="info-tax">včetně DPH · <span class="stock-badge ${stock.cls}" style="margin-left:6px"><span class="stock-dot"></span>${escapeHtml(stock.label)}</span></div>
           <p class="info-desc">${product.description?escapeHtml(product.description):`Premium kvalita, výrazný design, poctivě ušito. ${escapeHtml(product.name)} je kus, na kterém záleží.`}</p>
@@ -3783,10 +4037,12 @@ function viewProduct({id}){
           </div>
         </div>
       </div>
+      <section class="rv-prod" id="hvRvProd" aria-label="Hodnocení zákazníků" hidden></section>
     </main>
     ${renderFooter()}
   `;
 
+  hvRvPaintProduct(product.id);hvRvPubLoad();
   // Galerie navigace
   let _pgIdx=0;
   const _pgImgs=galleryImgs;
@@ -3873,7 +4129,7 @@ function viewCart(){
             <div class="cart-item">
               <div class="cart-item-img">${getMockHTML(p)}</div>
               <div>
-                <a class="cart-item-name" onclick="go('product?id=${p.id}')">${escapeHtml(p.name)}</a>
+                <a class="cart-item-name" href="${hvProductPath(p.id)}" onclick="event.preventDefault();go('product?id=${p.id}')">${escapeHtml(p.name)}</a>
                 <div class="cart-item-meta">${escapeHtml(p.categoryLabel||p.category)}${item.size?` · ${escapeHtml(item.size)}`:''}</div>
                 <div class="cart-item-controls">
                   <div class="qty-controls">
@@ -5364,22 +5620,275 @@ function viewTrackOrder({id,email}={}){
   `;
 }
 
+// ============== HODNOCENÍ OBJEDNÁVEK ==============
+// Zákazník: e-mail „Doručeno“ → /objednavka/<kód> (bez přihlášení). Hvězdy, palec za doručení, komentář.
+// Hodnocení se na webu ukáže hned. Ke kontrole jde jen komentář s odkazem, e-mailem nebo telefonem (rozhoduje SQL).
+// Admin: Kvalita → Hodnocení (skrýt / zveřejnit). Web: schválená hodnocení u produktů + pro Google (JSON-LD).
+// SQL: hopi-hodnoceni.sql (funkce hopi_review_get / _submit / _optout / hopi_public_reviews, tabulka order_reviews).
+const HV_RV_WORD=['','Nic moc','Ujde','Dobré','Moc dobré','Skvělé'];
+const HV_RV_ST={pending:['Ke kontrole','#FF9500'],approved:['Zveřejněno','#34C759'],hidden:['Skryto','#8E8E93']};
+let hvRp={token:'',data:null,err:'',loading:false,rating:0,delivery:null,comment:'',saving:false,saved:'',optout:false,flash:''};
+function hvRvStars(n,size){n=Math.round(Number(n)||0);return `<span class="rv-st" style="--s:${size||16}px" aria-label="${n} z 5 hvězd">${[1,2,3,4,5].map(i=>`<i class="${i<=n?'on':''}">★</i>`).join('')}</span>`}
+function hvRvDate(d){try{const x=new Date(d);return isNaN(x)?'':x.toLocaleDateString('cs-CZ',{day:'numeric',month:'numeric',year:'numeric'})}catch(e){return ''}}
+
+// ---------- Stránka /objednavka/<kód> ----------
+function viewOrderReview({token}={}){
+  const app=document.getElementById('app');
+  if(hvRp.token!==token){hvRp={token,data:null,err:'',loading:false,rating:0,delivery:null,comment:'',saving:false,saved:'',optout:false,flash:''}}
+  if(!hvRp.data&&!hvRp.err&&!hvRp.loading)hvRpLoad();
+  app.innerHTML=`${renderNavbar()}<main class="page page-narrow rv-page" id="rvPage">${hvRpHtml()}</main>${renderFooter()}`;
+}
+async function hvRpLoad(){
+  const t=hvRp.token;hvRp.loading=true;
+  let q={};try{const u=new URLSearchParams(location.search);q={r:Number(u.get('hodnoceni'))||0,d:Number(u.get('doruceni'))||0,o:u.get('odhlasit')==='1'}}catch(e){}
+  // parametry z e-mailu jen jednou – pak čistá adresa (ať se při obnovení stránky neposílají znovu)
+  if(location.search){try{history.replaceState(history.state,'',location.pathname+location.hash)}catch(e){}window._hvNavHref=location.href}
+  try{
+    const {data,error}=await supabaseClient.rpc('hopi_review_get',{p_token:t});
+    if(t!==hvRp.token)return;
+    if(error)throw error;
+    if(!data){hvRp.err='notfound'}
+    else{
+      hvRp.data=data;hvRp.optout=!!data.optout;
+      const r=data.review||{};
+      hvRp.rating=r.rating||0;hvRp.delivery=r.delivery??null;hvRp.comment=r.comment||'';
+      if(q.o){try{const x=await supabaseClient.rpc('hopi_review_optout',{p_token:t});if(!x.error){hvRp.optout=true;hvRp.flash='optout'}}catch(e){}}
+      if(q.r>=1&&q.r<=5)hvRp.rating=q.r;
+      if(q.d===1||q.d===-1)hvRp.delivery=q.d;
+      // klik na hvězdu v e-mailu = rovnou uložit (palec z e-mailu jen když už hodnocení existuje – hvězdy jsou povinné)
+      if(data.status!=='cancelled'&&hvRp.rating&&(q.r||(q.d&&data.review))){hvRp.loading=false;hvRpPaint();await hvRpSubmit(true);return}
+    }
+  }catch(e){if(t===hvRp.token)hvRp.err=String(e&&e.message||e)}
+  hvRp.loading=false;hvRpPaint();
+}
+function hvRpPaint(){const el=document.getElementById('rvPage');if(el&&getRoute().path==='objednavka')el.innerHTML=hvRpHtml()}
+function hvRpHtml(){
+  if(hvRp.err==='notfound')return `<div class="rv-empty"><div class="rv-ico">🔗</div><h1 class="page-title">Odkaz nefunguje</h1><p class="page-sub">Tenhle odkaz na hodnocení neznáme. Zkontroluj, že je celý, nebo nám napiš.</p><a class="btn btn-primary" onclick="go('home')">Na e-shop <span class="arrow">→</span></a></div>`;
+  if(hvRp.err)return `<div class="rv-empty"><div class="rv-ico">⚠️</div><h1 class="page-title">Nepodařilo se načíst</h1><p class="page-sub">Zkus to prosím za chvilku znovu.</p><button class="btn btn-primary" onclick="hvRp.err='';viewOrderReview({token:hvRp.token})">Zkusit znovu</button></div>`;
+  const d=hvRp.data;
+  if(!d)return `<div class="rv-load" aria-live="polite"><i></i><span>Načítám objednávku…</span></div>`;
+  const s=getSettings(),mail=s.email||'eshophopivirtual@gmail.com',products=getProducts();
+  const rv=d.review,cancelled=d.status==='cancelled';
+  const items=(d.items||[]).map(i=>{
+    const p=products.find(x=>Number(x.id)===Number(i.productId));
+    const price=Number(i.price)>0?Number(i.price)*(Number(i.qty)||1):(p?Number(p.price)*(Number(i.qty)||1):0);
+    return `<div class="rv-item"><div class="rv-thumb">${p?getMockHTML(p):''}</div><div class="rv-iname"><b>${escapeHtml((p&&p.name)||i.name||'Produkt')}</b><small>${i.size?'Velikost '+escapeHtml(i.size)+' · ':''}${Number(i.qty)||1}×</small></div><div class="rv-iprice">${price?formatPrice(price)+' Kč':''}</div></div>`;
+  }).join('');
+  const flash=hvRp.flash==='saved'?`<div class="rv-flash ok" role="status">${hvIconSafe('check')}<div><b>Díky, hodnocení máme!</b><span>${hvRp.data.review&&hvRp.data.review.status==='pending'?'Tvůj komentář obsahuje odkaz nebo kontakt, takže ho před zveřejněním ještě zkontrolujeme.':hvRp.comment?'Hodnocení už je vidět u produktů na e-shopu.':'Chceš přidat pár slov? Pomůžou dalším zákazníkům.'}</span></div></div>`
+    :hvRp.flash==='optout'?`<div class="rv-flash" role="status">${hvIconSafe('check')}<div><b>Hotovo, žádosti o hodnocení ti už posílat nebudeme.</b><span>E-maily o stavu objednávek ti chodit budou dál.</span></div></div>`
+    :hvRp.flash==='error'?`<div class="rv-flash bad" role="alert"><div><b>Uložit se nepovedlo.</b><span>${escapeHtml(hvRp.saved||'Zkus to prosím znovu.')}</span></div></div>`:'';
+  const stBadge=rv&&HV_RV_ST[rv.status]&&hvRp.flash!=='saved'?`<span class="rv-badge" style="--c:${HV_RV_ST[rv.status][1]}">${rv.status==='approved'?'Zveřejněno u produktů':rv.status==='hidden'?'Uloženo':'Uloženo · ke kontrole'}</span>`:'';
+  const left=1000-(hvRp.comment||'').length;
+  return `
+    <div class="rv-head">
+      <div class="rv-meta">Objednávka <b>${escapeHtml(d.id)}</b>${d.date?' · '+escapeHtml(hvRvDate(d.date)):''}</div>
+      <h1 class="page-title">${cancelled?'Objednávka byla zrušena':`Jak se ti líbí${d.firstName?', '+escapeHtml((w=>w.charAt(0).toUpperCase()+w.slice(1))(String(d.firstName).trim().split(/\s+/)[0])):''}?`}</h1>
+      <p class="page-sub">${cancelled?'Zrušenou objednávku nejde hodnotit. Kdyby něco, napiš nám.':'Dej nám vědět, jak jsi spokojený(á). Zabere to pár vteřin.'}</p>
+      ${stBadge}
+    </div>
+    ${flash}
+    ${cancelled?'':`
+    <section class="rv-card" aria-labelledby="rvQ1">
+      <h2 id="rvQ1">Jak hodnotíš objednávku?</h2>
+      <div class="rv-stars" role="radiogroup" aria-label="Hodnocení 1 až 5 hvězd">
+        ${[1,2,3,4,5].map(n=>`<button type="button" role="radio" aria-checked="${hvRp.rating===n}" aria-label="${n} z 5 – ${HV_RV_WORD[n]}" class="${n<=hvRp.rating?'on':''}" onclick="hvRpRate(${n})">★</button>`).join('')}
+      </div>
+      <div class="rv-scale"><span>Nic moc</span><b aria-live="polite">${hvRp.rating?HV_RV_WORD[hvRp.rating]:''}</b><span>Skvělé</span></div>
+    </section>
+    <section class="rv-card rv-row" aria-labelledby="rvQ2">
+      <div><h2 id="rvQ2">A co doručení?</h2><p>Rychlost, balení, stav zásilky</p></div>
+      <div class="rv-thumbs" role="radiogroup" aria-label="Doručení">
+        <button type="button" role="radio" aria-checked="${hvRp.delivery===1}" class="${hvRp.delivery===1?'on up':''}" onclick="hvRpDel(1)" aria-label="Spokojený">👍</button>
+        <button type="button" role="radio" aria-checked="${hvRp.delivery===-1}" class="${hvRp.delivery===-1?'on down':''}" onclick="hvRpDel(-1)" aria-label="Nespokojený">👎</button>
+      </div>
+    </section>
+    <section class="rv-card">
+      <label for="rvText"><h2>Napiš pár slov <small>(nepovinné)</small></h2></label>
+      <textarea id="rvText" maxlength="1000" rows="4" placeholder="Co se ti líbí? Jak sedí velikost, jaký je materiál…" oninput="hvRpText(this)">${escapeHtml(hvRp.comment||'')}</textarea>
+      <div class="rv-cnt" id="rvCnt">${left<200?left+' znaků zbývá':''}</div>
+      <p class="rv-note">Hodnocení se zobrazí u produktů na e-shopu jen s tvým křestním jménem a prvním písmenem příjmení (např. <b>Jan N.</b>). Nic dalšího o tobě nezveřejníme.</p>
+      <button type="button" class="btn btn-primary rv-send" id="rvSend" onclick="hvRpSubmit()" ${hvRp.saving?'disabled':''}>${hvRp.saving?'Ukládám…':rv?'Uložit hodnocení':'Odeslat hodnocení'}</button>
+    </section>`}
+    <section class="rv-card rv-items">
+      <h2>Hodnotíš objednávku</h2>
+      ${items||'<p class="rv-muted">Položky se nepodařilo načíst.</p>'}
+      <div class="rv-total"><span>Celkem</span><b>${formatPrice(d.total)} Kč</b></div>
+    </section>
+    <section class="rv-help">
+      <b>Něco nebylo v pořádku?</b> Napiš to do hodnocení. Spěchá to? Ozvi se nám.
+      <div><a class="btn btn-outline btn-sm" onclick="go('complaint?order=${encodeURIComponent(d.id)}')">Reklamace</a><a class="btn btn-outline btn-sm" href="mailto:${escapeHtml(mail)}">${escapeHtml(mail)}</a></div>
+    </section>
+    <p class="rv-out">${hvRp.optout?'Žádosti o hodnocení ti neposíláme.':`<a onclick="hvRpOptout()">Nechci dostávat žádosti o hodnocení</a>`}</p>`;
+}
+function hvIconSafe(n){return typeof hvIcon==='function'&&HV_I[n]?hvIcon(n,22):'✓'}
+window.hvRpRate=function(n){hvRp.rating=n;if(hvRp.flash!=='optout')hvRp.flash='';hvRpPaint();const b=document.querySelector('.rv-stars button[aria-checked="true"]');if(b)b.focus()};
+window.hvRpDel=function(v){hvRp.delivery=hvRp.delivery===v?null:v;hvRpPaint();const b=document.querySelector('.rv-thumbs button[aria-checked="true"]')||document.querySelector('.rv-thumbs button');if(b)b.focus()};
+window.hvRpText=function(el){hvRp.comment=el.value;const c=document.getElementById('rvCnt'),l=1000-el.value.length;if(c)c.textContent=l<200?l+' znaků zbývá':''};
+window.hvRpSubmit=async function(auto){
+  if(hvRp.saving)return;
+  if(!hvRp.rating){showToast('Vyber prosím počet hvězd.','error');const b=document.querySelector('.rv-stars button');if(b)b.focus();return}
+  hvRp.saving=true;if(!auto)hvRpPaint();
+  try{
+    const {data,error}=await supabaseClient.rpc('hopi_review_submit',{p_token:hvRp.token,p_rating:hvRp.rating,p_delivery:hvRp.delivery,p_comment:hvRp.comment||''});
+    if(error)throw error;
+    const old=hvRp.data.review||{};
+    hvRp.data.review={rating:hvRp.rating,delivery:hvRp.delivery,comment:(hvRp.comment||'').trim()||null,status:(data&&data.status)||old.status||'approved'};
+    _hvRvPubAt=0;
+    hvRp.flash='saved';hvRp.saved='';
+  }catch(e){hvRp.flash='error';hvRp.saved=String(e&&e.message||'')}
+  hvRp.saving=false;hvRpPaint();
+  if(hvRp.flash==='saved'&&!auto)window.scrollTo({top:0,behavior:'smooth'});
+};
+window.hvRpOptout=async function(){
+  try{const {error}=await supabaseClient.rpc('hopi_review_optout',{p_token:hvRp.token});if(error)throw error;hvRp.optout=true;hvRp.flash='optout';hvRpPaint();window.scrollTo({top:0,behavior:'smooth'})}
+  catch(e){showToast('Nepovedlo se, zkus to prosím znovu.','error')}
+};
+
+// ---------- Veřejná hodnocení (u produktů) ----------
+let hvRvPub=(()=>{try{const c=JSON.parse(localStorage.getItem('hopi_reviews_pub')||'null');return Array.isArray(c)?c:null}catch(e){return null}})();
+let _hvRvPubAt=0,_hvRvPubBusy=null;
+function hvRvPubLoad(){
+  if(_hvRvPubBusy)return _hvRvPubBusy;
+  if(Date.now()-_hvRvPubAt<5*60e3)return Promise.resolve(hvRvPub);
+  _hvRvPubBusy=(async()=>{
+    try{
+      const {data,error}=await supabaseClient.rpc('hopi_public_reviews');
+      if(!error&&Array.isArray(data)){
+        const ch=JSON.stringify(data)!==JSON.stringify(hvRvPub);hvRvPub=data;_hvRvPubAt=Date.now();
+        try{localStorage.setItem('hopi_reviews_pub',JSON.stringify(data))}catch(e){}
+        if(ch){const {path,params}=getRoute();if(path==='product'){hvRvPaintProduct(params.id);hvSeoApply(path,params)}}
+      }
+    }catch(e){}
+    _hvRvPubBusy=null;return hvRvPub;
+  })();
+  return _hvRvPubBusy;
+}
+function hvRvFor(pid){return (hvRvPub||[]).filter(r=>Array.isArray(r.products)&&r.products.map(Number).includes(Number(pid)))}
+function hvRvSummary(list){const n=list.length;return {n,avg:n?Math.round(list.reduce((s,r)=>s+(Number(r.rating)||0),0)/n*10)/10:0}}
+function hvRvProductHtml(pid){
+  const list=hvRvFor(pid);if(!list.length)return '';
+  const {n,avg}=hvRvSummary(list);
+  const cards=list.slice(0,_hvRvMore[pid]?60:4).map(r=>`<article class="rv-pub"><div class="rv-pub-top">${hvRvStars(r.rating,15)}<span>${escapeHtml(hvRvDate(r.date))}</span></div>${r.comment?`<p>${escapeHtml(r.comment)}</p>`:`<p class="rv-muted">Bez komentáře – ${escapeHtml(HV_RV_WORD[r.rating]||'').toLowerCase()}.</p>`}<b>${escapeHtml(r.name||'Zákazník')}</b><small>Ověřený nákup</small></article>`).join('');
+  return `<div class="rv-sum"><div class="rv-avg">${avg.toFixed(1).replace('.',',')}</div><div>${hvRvStars(avg,20)}<span>${n} hodnocení od zákazníků, kteří nakoupili</span></div></div>
+    <div class="rv-grid">${cards}</div>
+    ${list.length>4&&!_hvRvMore[pid]?`<button type="button" class="btn btn-outline btn-sm rv-more" onclick="_hvRvMore[${Number(pid)}]=1;hvRvPaintProduct(${Number(pid)})">Zobrazit všechna hodnocení (${n})</button>`:''}`;
+}
+const _hvRvMore={};
+function hvRvPaintProduct(pid){const el=document.getElementById('hvRvProd');if(!el)return;const h=hvRvProductHtml(pid);el.hidden=!h;el.innerHTML=h?`<h2 class="rv-ph">Hodnocení zákazníků</h2>${h}`:''}
+// JSON-LD pro Google: jen skutečná schválená hodnocení
+function hvRvLd(pid){
+  const list=hvRvFor(pid);if(!list.length)return null;
+  const {n,avg}=hvRvSummary(list);
+  return {aggregateRating:{"@type":"AggregateRating","ratingValue":avg,"reviewCount":n,"bestRating":5,"worstRating":1},
+    review:list.slice(0,10).map(r=>({"@type":"Review","reviewRating":{"@type":"Rating","ratingValue":Number(r.rating),"bestRating":5,"worstRating":1},"author":{"@type":"Person","name":r.name||'Zákazník'},...(r.date?{"datePublished":r.date}:{}),...(r.comment?{"reviewBody":r.comment}:{})}))};
+}
+
+// ---------- Admin: Kvalita → Hodnocení ----------
+let hvRa={rows:null,err:'',loading:false,f:'all'};
+async function hvRaLoad(force){
+  if(hvRa.loading||(hvRa.rows&&!force))return;
+  hvRa.loading=true;hvRaPaint();
+  try{
+    const {data,error}=await supabaseClient.from('order_reviews').select('id,order_id,rating,delivery,comment,public_name,product_ids,status,created_at,updated_at').order('created_at',{ascending:false}).limit(1000);
+    if(error)throw error;hvRa.rows=data||[];hvRa.err='';
+  }catch(e){hvRa.err=/order_reviews/.test(String(e&&e.message))?'Chybí tabulka hodnocení – spusť v Supabase soubor hopi-hodnoceni.sql.':String(e&&e.message||e)}
+  hvRa.loading=false;
+  if(adminView==='reviews')hvRaPaint();
+  hvRaBadges();
+}
+function hvRaPending(){return (hvRa.rows||[]).filter(r=>r.status==='pending').length}
+function hvRaBadges(){
+  const n=hvRaPending();
+  document.querySelectorAll('.hv-item[onclick*="\'reviews\'"],.hv-pill[onclick*="\'reviews\'"]').forEach(el=>{let b=el.querySelector('.hv-badge');if(n>0){if(!b){b=document.createElement('span');b.className='hv-badge';el.appendChild(b)}b.textContent=n}else if(b)b.remove()});
+}
+function viewReviewsAdmin(){
+  if(!hvRa.rows&&!hvRa.loading&&!hvRa.err)setTimeout(()=>hvRaLoad(),0);
+  return `<div class="hv-dash cmp rc ra">
+    ${hvPageHead('Hodnocení','Co zákazníci říkají o objednávkách',`<button class="ovw-btn" onclick="hvRaLoad(true)">${hvIcon('refresh',15)} Načíst znovu</button>`)}
+    <p class="rc-help">Hodnocení chodí ze stránky, na kterou vede e-mail <b>Doručeno</b>, a u produktů (i pro Google) se <b>ukáže samo hned</b>. Nevhodné stačí <b>Skrýt</b>. Ke kontrole sem přijde jen komentář s odkazem, e-mailem nebo telefonem – ten zveřejníš, nebo skryješ.</p>
+    <div id="raBody">${hvRaBodyHtml()}</div>
+  </div>`;
+}
+function hvRaPaint(){const el=document.getElementById('raBody');if(el)el.innerHTML=hvRaBodyHtml()}
+function hvRaBodyHtml(){
+  if(hvRa.err&&!hvRa.rows)return `<div class="hv-panel"><div class="cp-empty rc-err"><b>Hodnocení se nenačetla</b><span>${escapeHtml(hvRa.err)}</span><button class="ovw-btn primary" onclick="hvRa.err='';hvRaLoad(true)">Zkusit znovu</button></div></div>`;
+  const rows=hvRa.rows;
+  if(!rows)return `<div class="rc-load" aria-live="polite"><i></i><span>Načítám hodnocení…</span></div>`;
+  const pub=rows.filter(r=>r.status==='approved'),all=rows.length;
+  const avg=all?Math.round(rows.reduce((s,r)=>s+r.rating,0)/all*10)/10:0;
+  const dl=rows.filter(r=>r.delivery!=null),up=dl.filter(r=>r.delivery===1).length;
+  const cnt=s=>rows.filter(r=>r.status===s).length;
+  const chip=(id,label,n,col)=>`<button type="button" class="rc-chip ${hvRa.f===id?'on':''}" aria-pressed="${hvRa.f===id}" onclick="hvRa.f='${id}';hvRaPaint()"${col?` style="--c:${col}"`:''}>${col?'<i></i>':''}${label}<b>${n}</b></button>`;
+  const vis=rows.filter(r=>hvRa.f==='all'||r.status===hvRa.f);
+  const prods=getProducts();
+  return `
+    <div class="ck-row k4">
+      ${hvKpi('Průměr',all?String(avg).replace('.',',')+' ★':'–',all?all+' hodnocení':'zatím nic','#B25000')}
+      ${hvKpi('Ke kontrole',cnt('pending'),cnt('pending')?'odkaz nebo kontakt v textu':'nic nečeká',cnt('pending')?'#C93400':'')}
+      ${hvKpi('Zveřejněno',pub.length,'u produktů na webu','#1E7B34')}
+      ${hvKpi('Doručení 👍',dl.length?Math.round(up/dl.length*100)+'&nbsp;%':'–',dl.length?up+' z '+dl.length:'zatím nic')}
+    </div>
+    <div class="rc-bar"><div class="rc-chips">${chip('all','Vše',all)}${cnt('pending')||hvRa.f==='pending'?chip('pending','Ke kontrole',cnt('pending'),HV_RV_ST.pending[1]):''}${chip('approved','Zveřejněné',pub.length,HV_RV_ST.approved[1])}${chip('hidden','Skryté',cnt('hidden'),HV_RV_ST.hidden[1])}</div></div>
+    ${hvRa.loading?`<div class="rc-load sm"><i></i><span>Aktualizuji…</span></div>`:''}
+    <div class="rc-list">${!all?`<div class="hv-panel rc-span"><div class="cp-empty"><b>Zatím žádná hodnocení</b><span>Jakmile zákazník ohodnotí objednávku z e-mailu Doručeno, objeví se tady.</span></div></div>`
+      :!vis.length?`<div class="hv-panel rc-span"><div class="cp-empty"><b>${hvRa.f==='pending'?'Nic nečeká na kontrolu':'Nic tu není'}</b><span>${hvRa.f==='pending'?'Všechno máš vyřízené.':'Zkus jiný filtr.'}</span></div></div>`
+      :vis.map(r=>{
+        const st=HV_RV_ST[r.status]||[r.status,'#8E8E93'];
+        const names=(r.product_ids||[]).map(id=>{const p=prods.find(x=>Number(x.id)===Number(id));return p?p.name:'#'+id}).join(', ');
+        const id=escapeHtml(r.id);
+        return `<article class="rc-card ra-card" style="--c:${st[1]}">
+          <div class="rc-top"><div>${hvRvStars(r.rating,22)}<div class="ra-word">${escapeHtml(HV_RV_WORD[r.rating]||'')}</div></div><span class="rc-pill">${escapeHtml(st[0])}</span></div>
+          ${r.comment?`<p class="ra-text">${escapeHtml(r.comment)}</p>`:`<p class="ra-text muted">Bez komentáře</p>`}
+          <dl class="rc-kv">
+            <dt>Jméno na webu</dt><dd>${escapeHtml(r.public_name||'Zákazník')}</dd>
+            <dt>Doručení</dt><dd>${r.delivery===1?'👍 spokojený':r.delivery===-1?'👎 nespokojený':'–'}</dd>
+            <dt>Objednávka</dt><dd><a onclick="adminOrderId='${escapeHtml(r.order_id)}';viewAdmin()">${escapeHtml(r.order_id)}</a></dd>
+            ${names?`<dt>Produkty</dt><dd>${escapeHtml(names)}</dd>`:''}
+            <dt>Přišlo</dt><dd>${escapeHtml(hvRvDate(r.created_at))}${r.updated_at&&hvRvDate(r.updated_at)!==hvRvDate(r.created_at)?' · upraveno '+escapeHtml(hvRvDate(r.updated_at)):''}</dd>
+          </dl>
+          <div class="ra-acts">
+            ${r.status!=='approved'?`<button class="ovw-btn primary" onclick="hvRaSet('${id}','approved')">Zveřejnit</button>`:''}
+            ${r.status!=='hidden'?`<button class="ovw-btn" onclick="hvRaSet('${id}','hidden')">Skrýt</button>`:''}
+          </div>
+        </article>`}).join('')}</div>`;
+}
+window.hvRaSet=async function(id,status){
+  const r=(hvRa.rows||[]).find(x=>x.id===id);if(!r)return;
+  const prev=r.status;r.status=status;hvRaPaint();hvRaBadges();
+  try{
+    const {data,error}=await supabaseClient.from('order_reviews').update({status,updated_at:new Date().toISOString()}).eq('id',id).select('id');
+    if(error)throw error;if(!data||!data.length)throw new Error('Nemáš oprávnění měnit hodnocení.');
+    showToast(status==='approved'?'Zveřejněno u produktů':'Skryto – na webu už není');
+    _hvRvPubAt=0;
+    if(typeof hvAudit==='function')try{hvAudit('reviews',status==='approved'?'Zveřejnil hodnocení':'Změnil hodnocení',r.order_id+' → '+(HV_RV_ST[status]||[status])[0])}catch(e){}
+  }catch(e){r.status=prev;hvRaPaint();hvRaBadges();showToast(String(e&&e.message||'Uložení se nepovedlo'),'error')}
+};
+
 // ============== ZÁKAZNICKÝ ÚČET (Supabase Auth + tabulka profiles) ==============
 // Admin e-maily: do zákaznického profilu se nepouští, patří do adminu.
 // ⚠️ Musí být STEJNÉ jako v SQL (funkce hopi_is_admin / hopi_is_owner).
 const ADMIN_EMAILS=['hopi.ets2@seznam.cz'].map(e=>e.toLowerCase());
 
-function hvSiteUrl(){return location.origin+(hvSpPathForm()?hvRoot():location.pathname)}
+function hvSiteUrl(){return location.origin+(hvPathRoute()?hvRoot():location.pathname)}
 function hvIsListedAdmin(email){return ADMIN_EMAILS.includes(String(email||'').trim().toLowerCase())}
 
 // Je přihlášený účet admin / personál? (pevný seznam → SQL funkce → záložně seznam lidí z adminu)
 async function hvIsAdminAccount(authUser){
   const email=String((authUser&&authUser.email)||'').toLowerCase();
   if(!email)return false;
+  window._hvMyAccess=null;
   if(hvIsListedAdmin(email))return true;
   try{
     const {data,error}=await supabaseClient.rpc('hopi_is_admin');
-    if(!error)return data===true;
+    if(!error){
+      if(data===true)return true;
+      // Omezená role (např. Nábor – jen Přihlášky): do adminu smí, ale databáze jí nedá data e-shopu
+      try{
+        const r=await supabaseClient.rpc('hopi_my_access');const a=r&&r.data;
+        if(a&&a.active!==false&&a.limited&&a.role&&Array.isArray(a.role.sections)&&a.role.sections.length){window._hvMyAccess=a;return true}
+      }catch(e){}
+      return false;
+    }
     console.warn('hopi_is_admin:',error.message,'– používám seznam lidí z adminu');
   }catch(e){console.warn('hopi_is_admin:',e)}
   // SQL ještě není spuštěné → dřívější chování podle seznamu Uživatelé a role
@@ -7144,7 +7653,7 @@ function viewNotificationsAdmin(){
       ${hvCpHead('Odeslané e-maily','posledních 60',`<button class="ovw-btn sm" onclick="_hvRcp=null;_hvNLog=null;hvLoadNotif()">Obnovit</button>`)}
       ${_hvNLogErr?`<div class="cp-empty"><b>Log se nepodařilo načíst</b><span>${escapeHtml(_hvNLogErr)}</span></div>`:_hvNLog===null?'<div class="cp-empty"><span><span class="hv-spin"></span> Načítám…</span></div>':_hvNLog.length?`<div class="nt-log">${_hvNLog.map(l=>`
         <div class="nt-lr"><span class="nt-t">${fmt(l.created_at)}</span><span class="nt-w"><b>${escapeHtml(HV_NOTIF_LOG_LABEL[l.event]||l.event)}${l.event!=='test'&&l.event!=='new_registration'?' · '+escapeHtml(l.ref):''}</b><small>${escapeHtml(l.recipient_email)}${l.attempts>1?' · '+l.attempts+'. pokus':''}${l.error?' · '+escapeHtml(hvNotifErrCz(l.error)):''}</small></span>
-          <span>${odPill((st[l.status]||[l.status])[0],(st[l.status]||[0,'#8E8E93'])[1])}</span>
+          <span>${(()=>{const x=l.status==='scheduled'?(new Date(l.send_at||0)>new Date()?['Naplánováno · '+fmt(l.send_at),'#007AFF']:['Odesláno','#34C759']):(st[l.status]||[l.status,'#8E8E93']);return odPill(x[0],x[1])})()}</span>
           <span>${l.status==='failed'&&l.event!=='test'&&l.event!=='telegram'&&!/^join_/.test(l.event)?`<button class="ovw-btn sm" onclick="hvNotifRetry(${l.id},this)">Zkusit znovu</button>`:''}</span></div>`).join('')}</div>`:'<div class="cp-empty"><b>Zatím nic neodešlo</b><span>Pošli si testovací e-mail z úpravy příjemce.</span></div>'}
     </div>
   </div>`;
@@ -8012,7 +8521,8 @@ window.tryAdminLogin=async function(){
 window.adminLogout=async function(){
   if(!confirm('Opravdu se chceš odhlásit?'))return;
   await supabaseClient.auth.signOut();
-  setAdminUser(null); setUser(null);
+  setAdminUser(null); setUser(null); window._hvMyAccess=null;
+  try{hvRc.data={ridic:null,firma:null};hvRc.open=null}catch(e){}
   // neveřejná nastavení nenechávat v prohlížeči po odhlášení
   ['hopi_admin_access','hopi_audit_log','ecomail_api_key','invoice_config','hopi_notif','hopi_investments','hopi_opex','hopi_kpi_targets','hopi_costs','hopi_order_costs','hopi_gopay_tariffs'].forEach(k=>delete _appSettingsCache[k]);
   try{localStorage.setItem('hopi_app_settings_cache',JSON.stringify(_appSettingsCache))}catch(e){}
@@ -8026,6 +8536,11 @@ let adminOrderId=null;
 
 // ============== ADMIN NAVIGACE (skupiny podle vzoru: Přehled → Provoz → Statistiky → … → Správa) ==============
 const HV_I={
+  refresh:'<path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>',
+  copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
   eye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
   users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
   lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
@@ -8063,6 +8578,7 @@ function hvAllNav(){
   const orders=getOrders();
   const newCount=orders.filter(o=>(o.status||'new')==='new').length;
   const complaintsPending=(typeof getComplaints==='function'?getComplaints():[]).filter(c=>c.status==='pending').length;
+  if(!hvRa.rows&&!hvRa.loading&&!hvRa.err&&getAdminUser()&&!window._hvRaAuto){window._hvRaAuto=1;setTimeout(()=>{try{if(hvAllowed('reviews'))hvRaLoad()}catch(e){}},300)}
   return [
     {id:'overview',label:'Přehled',icon:'grid',bg:'#007AFF',view:'overview'},
     {id:'provoz',label:'Provoz',icon:'receipt',bg:'#FF9500',children:[
@@ -8085,7 +8601,9 @@ function hvAllNav(){
     ]},
     {id:'kvalita',label:'Kvalita',icon:'star',bg:'#FFCC00',fill:true,children:[
       {view:'complaints',label:'Reklamace',icon:'alert',bg:'#FF3B30',badge:complaintsPending},
+      {view:'reviews',label:'Hodnocení',icon:'star',bg:'#FF9F0A',fill:true,badge:hvRaPending()},
     ]},
+    {id:'recruit',label:'Přihlášky',icon:'inbox',bg:'#34C759',view:'recruit',badge:hvRcNewCount('ridic')+hvRcNewCount('firma')},
     {id:'sprava',label:'Správa',icon:'gear',bg:'#8E8E93',children:[
       {view:'settings',label:'Nastavení shopu',icon:'sliders',bg:'#8E8E93'},
       {view:'website',label:'Nastavení webu',icon:'globe',bg:'#007AFF'},
@@ -8130,7 +8648,7 @@ function hvNavDesktopItems(nav){
   return nav.map(g=>{
     const ic=hvTile(g,28);
     if(!g.children){
-      return `<a class="hv-item ${hvIsActive(g)?'active':''}" onclick="hvGo('${g.view}')">${ic}<span>${g.label}</span></a>`;
+      return `<a class="hv-item ${hvIsActive(g)?'active':''}" onclick="hvGo('${g.view}')">${ic}<span>${g.label}</span>${hvBadge(g.badge)}</a>`;
     }
     const open=adminNavOpen===g.id;
     const childBadge=g.children.reduce((s,c)=>s+(c.badge||0),0);
@@ -8144,7 +8662,7 @@ function hvNavMobileItems(nav){
   return nav.map(g=>{
     const ic=hvTile(g,28);
     if(!g.children){
-      return `<button class="hv-pill ${hvIsActive(g)?'active':''}" onclick="hvGo('${g.view}')">${ic}${g.label}</button>`;
+      return `<button class="hv-pill ${hvIsActive(g)?'active':''}" onclick="hvGo('${g.view}')">${ic}${g.label}${hvBadge(g.badge)}</button>`;
     }
     const open=adminNavOpen===g.id;
     const childBadge=g.children.reduce((s,c)=>s+(c.badge||0),0);
@@ -8191,6 +8709,86 @@ function hvAfterRender(){
 }
 
 const HV_ADMIN_CSS=`
+/* ---------- Hodnocení (admin) ---------- */
+.ra-card .rc-top{margin-bottom:12px}
+.ra-word{margin-top:6px;font-size:14px;font-weight:700;color:#B25000}
+.ra-text{margin:0 0 16px;font-size:17px;line-height:1.5;color:#1c1c1e;white-space:pre-line;overflow-wrap:anywhere}
+.ra-text.muted{color:rgba(60,60,67,.5);font-size:15px}
+.ra-card .rc-kv dd a{cursor:pointer}
+.ra-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+.ra-acts .ovw-btn{min-height:42px}
+.ra .rv-st{display:inline-flex;gap:1px;font-size:var(--s);line-height:1}
+.ra .rv-st i{font-style:normal;color:#D1D1D6}
+.ra .rv-st i.on{color:#FF9F0A}
+.em-delay{flex-shrink:0;height:40px;padding:0 34px 0 12px;border-radius:12px;border:1px solid rgba(60,60,67,.18);background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%233a3a3c' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 12px center;font:600 15px/1 -apple-system,BlinkMacSystemFont,"Inter",sans-serif;color:#1c1c1e;-webkit-appearance:none;appearance:none;cursor:pointer}
+.em-delay:focus{outline:3px solid rgba(0,122,255,.35);outline-offset:1px}
+/* ---------- Přihlášky (nábor) ---------- */
+.rc-tabs{display:inline-flex;background:rgba(118,118,128,.12);border-radius:999px;padding:3px;gap:2px;margin:0 0 14px}
+.rc-tabs button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:110px;height:40px;padding:0 18px;border:0;border-radius:999px;background:transparent;font:600 15px/1 -apple-system,BlinkMacSystemFont,"Inter",sans-serif;color:rgba(60,60,67,.8);cursor:pointer;touch-action:manipulation}
+.rc-tabs button.on{background:#fff;color:#000;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.rc-tabs button:focus-visible{outline:3px solid #007AFF;outline-offset:1px}
+.rc-tabs .rc-tabn{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#FF3B30;color:#fff;font-size:12px;font-weight:700;line-height:1}
+.rc-tabs .rc-tabn:empty{display:none}
+.rc-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.rc-chips{display:flex;gap:6px;flex-wrap:wrap;flex:1 1 auto}
+.rc-chip{display:inline-flex;align-items:center;gap:7px;min-height:38px;padding:0 14px;border-radius:999px;border:1px solid rgba(60,60,67,.14);background:#fff;font:600 14px/1 -apple-system,BlinkMacSystemFont,"Inter",sans-serif;color:#1c1c1e;cursor:pointer;touch-action:manipulation;transition:background .15s,border-color .15s}
+.rc-chip i{width:8px;height:8px;border-radius:50%;background:var(--c)}
+.rc-chip b{font-weight:700;color:rgba(60,60,67,.6)}
+.rc-chip.on{background:#1c1c1e;border-color:#1c1c1e;color:#fff}
+.rc-chip.on b{color:rgba(255,255,255,.7)}
+.rc-chip:focus-visible,.rc-cp:focus-visible{outline:3px solid #007AFF;outline-offset:2px}
+.rc-search{position:relative;flex:0 1 300px;min-width:200px}
+.rc-search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:rgba(60,60,67,.5);pointer-events:none}
+.rc-search input{width:100%;height:40px;padding:0 14px 0 36px;border-radius:999px;border:1px solid transparent;background:rgba(118,118,128,.12);font-size:16px;color:#1c1c1e;outline:none}
+.rc-search input:focus{background:#fff;border-color:#007AFF}
+.rc-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:16px;align-items:start}
+.rc-span{grid-column:1/-1}
+.rc-card{background:#fff;border:1px solid rgba(60,60,67,.1);border-radius:24px;padding:24px 26px 22px;box-shadow:0 1px 2px rgba(0,0,0,.04);color:#1c1c1e;min-width:0}
+.rc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px}
+.rc-name{margin:0;font-size:24px;font-weight:800;letter-spacing:-.015em;line-height:1.2;overflow-wrap:anywhere}
+.rc-pill{flex-shrink:0;display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:999px;font-weight:700;font-size:14.5px;color:var(--c);background:color-mix(in srgb,var(--c) 13%,white)}
+.rc-kv{display:grid;grid-template-columns:minmax(110px,42%) 1fr;gap:12px 16px;margin:0;font-size:16px;line-height:1.4}
+.rc-kv dt{color:rgba(60,60,67,.62);margin:0;overflow-wrap:anywhere}
+.rc-kv dd{margin:0;font-weight:600;overflow-wrap:anywhere;min-width:0}
+.rc-kv dd a{color:#C8102E;font-weight:600;text-decoration:underline;text-underline-offset:2px}
+.rc-cp{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;margin:-4px 0 -4px 6px;vertical-align:middle;border:0;border-radius:9px;background:#F2F2F7;color:rgba(60,60,67,.75);cursor:pointer;touch-action:manipulation}
+.rc-cp:active{transform:scale(.94)}
+.rc-lbl{display:block;margin:20px 0 8px;font-size:15px;color:rgba(60,60,67,.75)}
+.rc-lbl small{font-size:13px;color:rgba(60,60,67,.55)}
+.rc-selw{position:relative}
+.rc-selw::after{content:'';position:absolute;right:18px;top:50%;width:8px;height:8px;border-right:2px solid #3a3a3c;border-bottom:2px solid #3a3a3c;transform:translateY(-70%) rotate(45deg);pointer-events:none}
+.rc-sel{width:100%;height:54px;padding:0 44px 0 18px;border-radius:16px;border:1px solid rgba(60,60,67,.18);background:#fff;font:700 17px/1 -apple-system,BlinkMacSystemFont,"Inter",sans-serif;color:#1c1c1e;-webkit-appearance:none;appearance:none;cursor:pointer;outline:none;box-shadow:inset 4px 0 0 var(--c)}
+.rc-ta{display:block;width:100%;min-height:96px;box-sizing:border-box;border-radius:16px;border:1px solid rgba(60,60,67,.18);padding:14px 16px;font:16px/1.45 -apple-system,BlinkMacSystemFont,"Inter",sans-serif;color:#1c1c1e;resize:vertical;outline:none}
+.rc-sel:focus,.rc-ta:focus{border-color:#007AFF;box-shadow:0 0 0 3px rgba(0,122,255,.15)}
+.rc-saved{min-height:18px;margin-top:8px;font-size:13px;color:rgba(60,60,67,.55)}
+.rc-saved.busy{color:#007AFF}
+.rc-saved.ok{color:#1E7B34}
+.rc-saved.bad{color:#C93400}
+.rc-load{display:flex;align-items:center;gap:12px;padding:28px 6px;color:rgba(60,60,67,.65);font-size:15px}
+.rc-load.sm{padding:0 4px 10px;font-size:13px}
+.rc-load i{width:20px;height:20px;border-radius:50%;border:2.5px solid rgba(0,138,63,.2);border-top-color:#008A3F;animation:rcSpin .8s linear infinite}
+.rc-load.sm i{width:14px;height:14px;border-width:2px}
+@keyframes rcSpin{to{transform:rotate(360deg)}}
+.rc-err .ovw-btn{margin-top:8px}
+.rc-up{position:relative;overflow:hidden;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.rc-up input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
+.rc-up:focus-within{outline:3px solid #007AFF;outline-offset:2px}
+.rc-help{margin:-4px 0 14px;font-size:14px;line-height:1.5;color:rgba(60,60,67,.7);max-width:820px}
+.rc-help a{color:#007AFF}
+.rc-warn{background:#FFF4E5;color:#8a4b00;border-radius:14px;padding:10px 14px;font-size:14px;margin-bottom:10px}
+@media (max-width:700px){
+  .rc-list{grid-template-columns:1fr}
+  .rc-search{flex:1 1 100%}
+  .rc-chips{flex-wrap:nowrap;overflow-x:auto;margin:0 -16px;padding:2px 16px;scrollbar-width:none}
+  .rc-chips::-webkit-scrollbar{display:none}
+  .rc-chip{flex-shrink:0}
+  .rc-card{padding:20px 18px 18px;border-radius:22px}
+  .rc-name{font-size:22px}
+  .rc-kv{grid-template-columns:minmax(96px,44%) 1fr;font-size:15.5px;gap:11px 12px}
+  .rc-tabs{display:flex}
+  .rc-tabs button{flex:1;min-width:0}
+}
+@media (prefers-reduced-motion:reduce){.rc-chip{transition:none}.rc-load i{animation-duration:2s}}
 .hv-shell{display:flex;min-height:100vh;background:#F2F2F7;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif}
 .hv-shell .admin-main{flex:1;min-width:0}
 .hv-side{width:290px;flex-shrink:0;background:#F7F7F9;border-right:1px solid rgba(60,60,67,.12);padding:18px 14px;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px;box-sizing:border-box}
@@ -10194,6 +10792,7 @@ function viewAdmin(){
       <main class="admin-main">
         ${_acc.none?viewNoAccess(_acc):adminOrderId?viewOrderDetail(adminOrderId):(
           adminView==='users'?viewUsersRoles():
+          adminView==='recruit'?viewRecruitAdmin():
           adminView==='customers'?viewCustomersAdmin():
           adminView==='loyalty'?viewLoyaltyAdmin():
           adminView==='notifications'?viewNotificationsAdmin():
@@ -10209,6 +10808,7 @@ function viewAdmin(){
           adminView==='products'?viewProductsAdmin():
           adminView==='emails'?viewEmailsAdmin():
           adminView==='complaints'?viewComplaintsAdmin():
+          adminView==='reviews'?viewReviewsAdmin():
           adminView==='invoices'?viewInvoicesAdmin():
           adminView==='finance'||adminView==='stats'||adminView==='sales'?viewSales():
           adminView==='traffic'?viewTraffic():
@@ -10343,7 +10943,7 @@ function renderSearchResults(){
 function renderSearchResult(p){
   const stock=stockStatus(p);
   return `
-    <a class="search-result" onclick="closeSearch();go('product?id=${p.id}')">
+    <a class="search-result" href="${hvProductPath(p.id)}" onclick="event.preventDefault();closeSearch();go('product?id=${p.id}')">
       <div class="search-result-thumb">${getMockHTML(p)}</div>
       <div style="min-width:0">
         <div class="search-result-name">${escapeHtml(p.name)}</div>
@@ -11268,7 +11868,7 @@ window.sendManualEmail=async function(orderId){
   if(!confirm(`Odeslat e-mail pro stav "${STATUSES[status].label}" na ${o.customer.email}?`))return;
   showToast('Odesílám...');
   const r=await sendStatusEmail(o,status,{force:true});
-  if(r.ok)showToast('✅ E-mail odeslán');
+  if(r.ok)showToast(status==='delivered'?'✅ E-mail odeslán hned (bez čekání)':'✅ E-mail odeslán');
   else showToast('❌ '+(r.reason||'chyba'),'error');
   viewAdmin();
 }
@@ -12794,7 +13394,7 @@ function hvTrack(path,params){
 // ---------- Návštěvnost: sekce v adminu ----------
 let hvTraffic={p:'month',from:'',to:'',cmp:false,metric:'visitors',sel:null};
 const _hvTrafCache={};
-const HV_TF_PAGES={home:'Úvodní stránka','spoluprace/ridic':'Spolupráce – nábor řidičů','spoluprace/firma':'Spolupráce – firmy',product:'Detail produktu',cart:'Košík',checkout:'Pokladna',success:'Děkujeme (po objednávce)','gopay-done':'Děkujeme (po platbě)','payment-cancelled':'Platba zrušena',track:'Sledování zásilky',trackOrder:'Stav objednávky',login:'Přihlášení',register:'Registrace',account:'Můj účet',info:'Informace (doprava, podmínky…)',complaint:'Reklamace',jine:'Ostatní'};
+const HV_TF_PAGES={home:'Úvodní stránka','spoluprace/ridic':'Spolupráce – nábor řidičů','spoluprace/firma':'Spolupráce – firmy',product:'Detail produktu',cart:'Košík',checkout:'Pokladna',success:'Děkujeme (po objednávce)','gopay-done':'Děkujeme (po platbě)','payment-cancelled':'Platba zrušena',track:'Sledování zásilky',trackOrder:'Stav objednávky',login:'Přihlášení',register:'Registrace',account:'Můj účet',info:'Informace (doprava, podmínky…)',complaint:'Reklamace',objednavka:'Hodnocení objednávky',jine:'Ostatní'};
 const HV_TF_DEV={mobil:'📱 Mobil',tablet:'📲 Tablet',pocitac:'💻 Počítač'};
 function hvTfKey(f,t){return f.toISOString()+'|'+t.toISOString()}
 async function hvTfLoad(f,t){
@@ -13496,6 +14096,8 @@ function renderConfigTab(config){
         <div class="pm-row"><span class="pm-txt"><b>Odesílatel</b><small>HOPI VIRTUAL &lt;notifikace@eshophopivirtual.com&gt; – nastavuje se v Supabase → Secrets (NOTIFY_FROM)</small></span></div>
         <div class="pm-row"><span class="pm-txt"><b>Odpovědi zákazníků</b><small>přijdou na ${escapeHtml(st.email||'—')} (Správa → Nastavení shopu → e-mail)</small></span></div>
         <div class="pm-row"><span class="pm-txt"><b>Nová objednávka</b><small>e-mail pošle server hned po vytvoření (dobírka, převod) nebo po zaplacení kartou</small></span></div>
+        <label class="pm-row"><span class="pm-txt"><b>Žádost o hodnocení</b><small>e-mail „Doručeno“ s hvězdičkami odejde s odstupem od označení „Doručeno“. V noci (21–8 h) se neposílá, odejde v 9:00.</small></span>
+          <select class="em-delay" onchange="hvSetReviewDelay(this.value)" aria-label="Kdy poslat žádost o hodnocení">${[[0,'Hned'],[1,'Za 1 hodinu'],[3,'Za 3 hodiny'],[6,'Za 6 hodin'],[24,'Další den'],[48,'Za 2 dny']].map(([v,l])=>`<option value="${v}"${Number(config.reviewDelayHours??3)===v?' selected':''}>${l}</option>`).join('')}</select></label>
       </div>
       <div id="emTestMsg" style="padding:0 18px"></div>
       <div class="pm-actions"><button class="ovw-btn" id="emTestBtn" onclick="sendTestEmail()">Poslat si test</button></div>
@@ -13529,11 +14131,235 @@ function renderLogTab(log){
   </div>`;
 }
 
+// ============== PŘIHLÁŠKY (nábor řidičů + spolupráce s firmami) ==============
+// Data: tabulka join_applications přes Edge Function „spoluprace“ (adminList / adminSet / adminImport).
+// Nové přihlášky z webu se ukládají samy; starší (a vyplněné přímo v Google Formuláři) se nahrají z CSV
+// staženého z Google Tabulky (Soubor → Stáhnout → CSV). Duplicity se přeskočí.
+const HV_RC={
+  ridic:{label:'Řidiči',one:'řidič',title:'Nábor řidičů',sheet:'https://docs.google.com/spreadsheets/d/1hrzanqdDCseAw-4QgkPu7fLf5J63dUoUx2i9eaAVWbI/edit',
+    statuses:['Nový','Kontaktován','Přijat','Zamítnut']},
+  firma:{label:'Firmy',one:'firma',title:'Spolupráce s firmami',sheet:'https://docs.google.com/spreadsheets/d/1oRdbpFvwjG9A6An4Qyi5h_lAd9iJ_uAIrZM7Cot99xs/edit',
+    statuses:['Nová','V jednání','Spolupráce','Zamítnuto']},
+};
+const HV_RC_COL=['#FF9500','#007AFF','#34C759','#FF3B30'];
+const hvRc={form:'ridic',f:'all',q:'',data:{ridic:null,firma:null},loading:{},err:{},open:null};
+function hvRcCol(form,status){const i=HV_RC[form].statuses.indexOf(status);return i>=0?HV_RC_COL[i]:'#8E8E93'}
+function hvRcNewCount(form){const d=hvRc.data[form];return d?d.rows.filter(r=>r.status===HV_RC[form].statuses[0]).length:0}
+
+async function hvRcCall(body){
+  const tok=await hvUserToken();
+  let res;
+  try{res=await fetch(SUPABASE_URL+'/functions/v1/spoluprace',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,'x-user-token':tok||''},body:JSON.stringify(body)})}
+  catch(e){return {ok:false,error:'Nepodařilo se spojit se serverem. Zkontroluj připojení.'}}
+  const d=await res.json().catch(()=>null);
+  if(!d)return {ok:false,error:'Server vrátil neplatnou odpověď ('+res.status+').'};
+  return d;
+}
+async function hvRcLoad(form,force){
+  if(hvRc.loading[form])return;
+  if(hvRc.data[form]&&!force)return;
+  hvRc.loading[form]=true;hvRc.err[form]='';
+  if(adminView==='recruit')hvRcPaint();
+  const d=await hvRcCall({action:'adminList',form});
+  hvRc.loading[form]=false;
+  if(d.ok){hvRc.data[form]={rows:Array.isArray(d.rows)?d.rows:[],at:Date.now()}}
+  else hvRc.err[form]=d.error||'Nepodařilo se načíst přihlášky.';
+  // celý admin (kvůli počtu nových v menu), jen když zrovna nikdo nepíše do hledání
+  if(adminView==='recruit'&&!adminOrderId){const a=document.activeElement;if(a&&a.closest&&a.closest('#rcBody'))hvRcPaint();else viewAdmin()}
+  hvRcBadges();
+}
+// Překreslí jen obsah sekce (ne celý admin), aby hledání neztrácelo kurzor
+function hvRcPaint(){const el=document.getElementById('rcBody');if(el)el.innerHTML=hvRcBodyHtml();else if(adminView==='recruit')viewAdmin()}
+function hvRcBadges(){
+  const n=hvRcNewCount('ridic')+hvRcNewCount('firma');
+  document.querySelectorAll('.hv-item[onclick*="\'recruit\'"],.hv-pill[onclick*="\'recruit\'"]').forEach(it=>{
+    let b=it.querySelector('.hv-badge');
+    if(!n){if(b)b.remove();return}
+    if(!b){b=document.createElement('span');b.className='hv-badge';it.appendChild(b)}
+    b.textContent=n;
+  });
+  ['ridic','firma'].forEach(f=>{const b=document.querySelector(`[data-rc-tab="${f}"]`);if(b){const c=hvRcNewCount(f);b.textContent=c?String(c):''}});
+}
+
+function viewRecruitAdmin(){
+  ['ridic','firma'].forEach(f=>{if(!hvRc.data[f]&&!hvRc.loading[f]&&!hvRc.err[f])setTimeout(()=>hvRcLoad(f),0)});
+  const acc=hvAccess();
+  const cfg=HV_RC[hvRc.form];
+  const tab=(f)=>{const c=hvRcNewCount(f);return `<button type="button" role="tab" aria-selected="${hvRc.form===f}" class="${hvRc.form===f?'on':''}" onclick="hvRcTab('${f}')">${HV_RC[f].label}<span class="rc-tabn" data-rc-tab="${f}">${c||''}</span></button>`};
+  return `
+  <div class="hv-dash cmp rc">
+    ${hvPageHead('Přihlášky','Nábor řidičů a zájem firem o spolupráci',`<button class="ovw-btn" onclick="hvRcLoad(hvRc.form,true)" aria-label="Načíst znovu">${hvIcon('refresh',15)} Načíst znovu</button><label class="ovw-btn primary rc-up" title="Nahrát CSV z Google Tabulky">${hvIcon('upload',15)} Nahrát tabulku<input type="file" accept=".csv,text/csv" onchange="hvRcImport(this)" aria-label="Nahrát tabulku (CSV)"></label>`)}
+    <p class="rc-help">Nové přihlášky z webu se tu objeví samy. Starší nahraješ tlačítkem <b>Nahrát tabulku</b>: v Google Tabulce s odpověďmi dej <b>Soubor → Stáhnout → CSV</b>${acc.full?` (<a href="${cfg.sheet}" target="_blank" rel="noopener noreferrer">otevřít tabulku ${escapeHtml(cfg.label.toLowerCase())}</a>)`:''}. Co už tu je, se znovu nepřidá.</p>
+    <div class="rc-tabs" role="tablist">${tab('ridic')}${tab('firma')}</div>
+    <div id="rcBody">${hvRcBodyHtml()}</div>
+  </div>`;
+}
+window.hvRcTab=function(f){hvRc.form=f;hvRc.f='all';viewAdmin();hvRcLoad(f)};
+window.hvRcFilter=function(s){hvRc.f=s;hvRcPaint()};
+window.hvRcSearch=function(v){hvRc.q=v;const l=document.getElementById('rcList');if(l)l.innerHTML=hvRcListHtml();else hvRcPaint()};
+
+function hvRcBodyHtml(){
+  const form=hvRc.form,cfg=HV_RC[form],d=hvRc.data[form];
+  if(hvRc.err[form]&&!d)return `<div class="hv-panel"><div class="cp-empty rc-err"><b>Přihlášky se nenačetly</b><span>${escapeHtml(hvRc.err[form])}</span><button class="ovw-btn primary" onclick="hvRcLoad('${form}',true)">Zkusit znovu</button></div></div>`;
+  if(!d)return `<div class="rc-load" aria-live="polite"><i></i><span>Načítám přihlášky z Google Tabulky…</span></div>`;
+  const cnt=s=>d.rows.filter(r=>r.status===s).length;
+  const chip=(id,label,n,col)=>`<button type="button" class="rc-chip ${hvRc.f===id?'on':''}" aria-pressed="${hvRc.f===id}" onclick="hvRcFilter(${id==='all'?"'all'":`'${escapeHtml(id)}'`})"${col?` style="--c:${col}"`:''}>${col?'<i></i>':''}${escapeHtml(label)}<b>${n}</b></button>`;
+  return `
+    ${hvRc.err[form]?`<div class="rc-warn">${escapeHtml(hvRc.err[form])}</div>`:''}
+    <div class="rc-bar">
+      <div class="rc-chips">${chip('all','Vše',d.rows.length)}${cfg.statuses.map((s,i)=>chip(s,s,cnt(s),HV_RC_COL[i])).join('')}</div>
+      <div class="ovw-search rc-search">${hvIcon('search',14)}<input type="search" placeholder="Hledat jméno, Discord, cokoli…" value="${escapeHtml(hvRc.q)}" oninput="hvRcSearch(this.value)" aria-label="Hledat v přihláškách"></div>
+    </div>
+    ${hvRc.loading[form]?`<div class="rc-load sm"><i></i><span>Aktualizuji…</span></div>`:''}
+    <div id="rcList" class="rc-list">${hvRcListHtml()}</div>`;
+}
+function hvRcVisible(){
+  const form=hvRc.form,d=hvRc.data[form];if(!d)return [];
+  const q=hvRc.q.trim().toLowerCase();
+  return d.rows.filter(r=>(hvRc.f==='all'||r.status===hvRc.f)&&(!q||(r.title+' '+r.note+' '+r.answers.map(a=>a[1]).join(' ')).toLowerCase().includes(q)));
+}
+// Krátké popisky místo celých otázek z formuláře (neznámá otázka zůstane celá)
+const HV_RC_SHORT={
+  ridic:[[/oslovovat/i,'Jméno'],[/kolik je ti let/i,'Věk'],[/odkud/i,'Země'],[/discord/i,'Discord'],[/trucky/i,'Trucky'],[/steam/i,'Steam'],[/hodin/i,'Hodiny v ETS2'],[/preferuje/i,'Preferuje'],[/účastnit.*konvoj|chodit na.*konvoj/i,'Firemní konvoje'],[/jak často/i,'Jak často hraje'],[/km/i,'Km měsíčně'],[/dlc/i,'DLC'],[/odešel|odešla/i,'Proč odešel/a'],[/vtc|virtuální firm/i,'Jiná VTC'],[/zkušenosti s truckersmp/i,'Zkušenost s TMP'],[/jízdou v konvoj|jezdil.*v konvoji/i,'Zkušenost s konvoji'],[/proč se chceš/i,'Proč k nám'],[/očekáváš/i,'Co očekává'],[/ještě něco/i,'Vzkaz'],[/pravidla/i,'Pravidla']],
+  firma:[[/název/i,'Firma'],[/odkaz/i,'Odkaz'],[/jakou hru/i,'Hra'],[/kde jezdíte/i,'Kde jezdí'],[/kolik máte řidičů/i,'Řidičů'],[/jakou spolupráci/i,'Spolupráce'],[/jak často/i,'Jak často'],[/kontaktní osoba/i,'Kontaktní osoba'],[/role/i,'Role'],[/pozvánka/i,'Pozvánka'],[/discord/i,'Discord'],[/zpráva|návrh/i,'Zpráva']],
+};
+function hvRcShort(form,l){const m=(HV_RC_SHORT[form]||[]).find(([re])=>re.test(l));return m?m[1]:l}
+function hvRcSavedTxt(r){return r.by||r.changed?`Naposledy upravil${r.by?' '+escapeHtml(r.by):''}${r.changed?' · '+escapeHtml(r.changed):''}`:''}
+function hvRcListHtml(){
+  const form=hvRc.form,d=hvRc.data[form];if(!d)return '';
+  const rows=hvRcVisible();
+  if(!d.rows.length)return `<div class="hv-panel rc-span"><div class="cp-empty"><b>Zatím žádné přihlášky</b><span>Jakmile někdo vyplní formulář na webu, objeví se tady. Starší přihlášky nahraj tlačítkem Nahrát tabulku.</span></div></div>`;
+  if(!rows.length)return `<div class="hv-panel rc-span"><div class="cp-empty"><b>Nic nenalezeno</b><span>Zkus jiný stav nebo hledaný text.</span></div></div>`;
+  const cfg=HV_RC[form];
+  return rows.map((r,i)=>{
+    const col=hvRcCol(form,r.status),id=escapeHtml(r.id);
+    const rowsHtml=r.answers.map(([l,v])=>{
+      const k=hvRcShort(form,l);
+      const copy=k==='Discord'?`<button type="button" class="rc-cp" onclick="hvRcCopy(this.dataset.v)" data-v="${escapeHtml(v)}" aria-label="Zkopírovat Discord ${escapeHtml(v)}" title="Zkopírovat">${hvIcon('copy',14)}</button>`:'';
+      return `<dt title="${escapeHtml(l)}">${escapeHtml(k)}</dt><dd>${hvRcVal(v)}${copy}</dd>`;
+    }).join('');
+    return `<article class="rc-card" data-id="${id}" style="--c:${col}">
+      <div class="rc-top"><h3 class="rc-name">${escapeHtml(r.title)}</h3><span class="rc-pill">${escapeHtml(r.status)}</span></div>
+      <dl class="rc-kv"><dt>Přišlo</dt><dd>${escapeHtml(hvRcDate(r))}</dd>${rowsHtml}</dl>
+      <label class="rc-lbl" for="rcS${i}">Stav</label>
+      <div class="rc-selw"><select id="rcS${i}" class="rc-sel" onchange="hvRcSet('${form}','${id}',this,'status')">${cfg.statuses.map(s=>`<option${s===r.status?' selected':''}>${escapeHtml(s)}</option>`).join('')}${cfg.statuses.includes(r.status)?'':`<option selected>${escapeHtml(r.status)}</option>`}</select></div>
+      <label class="rc-lbl" for="rcN${i}">Interní poznámka <small>(uchazeč ji nevidí)</small></label>
+      <textarea id="rcN${i}" class="rc-ta" rows="3" maxlength="2000" placeholder="Např. napsal jsem mu na Discord 10. 11., čekám na odpověď…" oninput="hvRcNoteInput('${form}','${id}',this)" onchange="hvRcSet('${form}','${id}',this,'note')">${escapeHtml(r.note||'')}</textarea>
+      <div class="rc-saved" aria-live="polite">${hvRcSavedTxt(r)}</div>
+    </article>`;
+  }).join('');
+}
+function hvRcDate(r){
+  const t=Date.parse(r.ts);
+  return isNaN(t)?(r.at||''):new Date(t).toLocaleString('cs-CZ',{day:'numeric',month:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+function hvRcFind(form,id){const d=hvRc.data[form];return d?d.rows.find(r=>r.id===id):null}
+function hvRcVal(v){
+  const s=escapeHtml(v);
+  return /^https?:\/\/\S+$/i.test(v)?`<a href="${s}" target="_blank" rel="noopener noreferrer">${s}</a>`:s.replace(/\n/g,'<br>');
+}
+window.hvRcCopy=function(t){try{navigator.clipboard.writeText(t).then(()=>showToast('Zkopírováno: '+t),()=>showToast('Kopírování se nepovedlo','error'))}catch(e){showToast('Kopírování se nepovedlo','error')}};
+// Poznámka se uloží sama chvilku po dopsání (a hned při opuštění pole)
+const _hvRcT={};
+window.hvRcNoteInput=function(form,id,el){clearTimeout(_hvRcT[id]);_hvRcT[id]=setTimeout(()=>hvRcSet(form,id,el,'note'),1500)};
+function hvRcCardOf(el){return el&&el.closest?el.closest('.rc-card'):null}
+function hvRcChipsRefresh(){
+  const form=hvRc.form,d=hvRc.data[form],box=document.querySelector('#rcBody .rc-chips');if(!d||!box)return;
+  box.querySelectorAll('.rc-chip').forEach((c,i)=>{const b=c.querySelector('b');if(b)b.textContent=i===0?d.rows.length:d.rows.filter(r=>r.status===HV_RC[form].statuses[i-1]).length});
+}
+window.hvRcSet=async function(form,id,el,field){
+  if(field==='note')clearTimeout(_hvRcT[id]);
+  const r=hvRcFind(form,id);if(!r||!el)return;
+  r._busy=r._busy||{};
+  const val=field==='note'?el.value.slice(0,2000):el.value;
+  if(val===(r[field]||''))return;
+  if(r._busy[field]){r._again=r._again||{};r._again[field]=el;return}
+  r._busy[field]=true;
+  const card=hvRcCardOf(el),sv=card&&card.querySelector('.rc-saved');
+  if(sv){sv.textContent='Ukládám…';sv.className='rc-saved busy'}
+  const d=await hvRcCall({action:'adminSet',form,id:r.id,status:field==='status'?val:null,note:field==='note'?val:null});
+  r._busy[field]=false;
+  if(!d.ok){
+    if(field==='status')el.value=r.status;
+    if(sv){sv.textContent='Neuloženo – '+(d.error||'zkus to znovu');sv.className='rc-saved bad'}
+    showToast(d.error||'Uložení se nepovedlo','error');
+    return;
+  }
+  r[field]=val;r.by=(d.row&&d.row.by)||d.by||r.by;
+  r.changed=(d.row&&d.row.changed)||new Date().toLocaleString('cs-CZ',{day:'numeric',month:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  if(card){
+    if(field==='status'){const col=hvRcCol(form,val);card.style.setProperty('--c',col);const p=card.querySelector('.rc-pill');if(p)p.textContent=val}
+    if(sv){sv.innerHTML='✓ Uloženo · '+hvRcSavedTxt(r);sv.className='rc-saved ok'}
+  }
+  if(field==='status'){hvRcChipsRefresh();hvRcBadges();showToast('Stav: '+val)}
+  const again=r._again&&r._again[field];if(again){r._again[field]=null;hvRcSet(form,id,again,field)}
+};
+
+// ---------- Nahrání tabulky (CSV z Google Tabulky) ----------
+function hvRcCsv(text){
+  text=String(text||'').replace(/^﻿/,'');
+  const sep=(text.split('\n')[0].match(/;/g)||[]).length>(text.split('\n')[0].match(/,/g)||[]).length?';':',';
+  const rows=[];let row=[],cur='',q=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(q){if(ch==='"'){if(text[i+1]==='"'){cur+='"';i++}else q=false}else cur+=ch;continue}
+    if(ch==='"'){q=true;continue}
+    if(ch===sep){row.push(cur);cur='';continue}
+    if(ch==='\r')continue;
+    if(ch==='\n'){row.push(cur);rows.push(row);row=[];cur='';continue}
+    cur+=ch;
+  }
+  if(cur!==''||row.length){row.push(cur);rows.push(row)}
+  return rows.filter(r=>r.some(c=>String(c).trim()));
+}
+// Časová značka z Google Tabulky: „9. 11. 2026 23:11:05“, „9.11.2026 23:11“, „11/9/2026 23:11:05“, „2026-11-09 23:11:05“
+function hvRcParseTs(s){
+  s=String(s||'').trim();let m,y,mo,d,h=0,mi=0,se=0;
+  if((m=s.match(/^(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})(?:[\s,]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/))){d=+m[1];mo=+m[2];y=+m[3];h=+(m[4]||0);mi=+(m[5]||0);se=+(m[6]||0)}
+  else if((m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[\s,]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/))){const a=+m[1],b=+m[2];if(a>12){d=a;mo=b}else{mo=a;d=b}y=+m[3];h=+(m[4]||0);mi=+(m[5]||0);se=+(m[6]||0)}
+  else if((m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/))){y=+m[1];mo=+m[2];d=+m[3];h=+(m[4]||0);mi=+(m[5]||0);se=+(m[6]||0)}
+  else return null;
+  const dt=new Date(y,mo-1,d,h,mi,se);
+  return isNaN(dt.getTime())||dt.getMonth()!==mo-1?null:dt.toISOString();
+}
+function hvRcDetectForm(headers){
+  const h=headers.join(' | ').toLowerCase();
+  if(/oslovovat|nick na trucky|hodin.*ets2/.test(h))return 'ridic';
+  if(/název vaší firmy|název firmy|kolik máte řidičů|role ve firmě/.test(h))return 'firma';
+  return null;
+}
+window.hvRcImport=async function(input){
+  const file=input&&input.files&&input.files[0];if(!file)return;
+  input.value='';
+  if(file.size>5*1024*1024){showToast('Soubor je moc velký (max 5 MB).','error');return}
+  if(!/\.csv$/i.test(file.name)&&!/csv|text/i.test(file.type||'')){showToast('Nahraj prosím soubor .csv (Google Tabulka → Soubor → Stáhnout → CSV).','error');return}
+  let text='';try{text=await file.text()}catch(e){showToast('Soubor se nepodařilo přečíst.','error');return}
+  const all=hvRcCsv(text);
+  if(all.length<2){showToast('V souboru nejsou žádné přihlášky.','error');return}
+  const headers=all[0].map(x=>String(x).trim());
+  const form=hvRcDetectForm(headers);
+  if(!form){showToast('Tohle nevypadá jako tabulka přihlášek (řidičů ani firem).','error');return}
+  const rows=all.slice(1).map(c=>({ts:hvRcParseTs(c[0]),cells:c})).filter(r=>r.ts);
+  const badTs=all.length-1-rows.length;
+  if(!rows.length){showToast('Nepodařilo se přečíst datum v prvním sloupci.','error');return}
+  if(form!==hvRc.form){hvRc.form=form;hvRc.f='all';viewAdmin()}
+  showToast(`Nahrávám ${rows.length} přihlášek (${HV_RC[form].label.toLowerCase()})…`);
+  let added=0,skipped=0,bad=badTs;
+  for(let i=0;i<rows.length;i+=300){
+    const d=await hvRcCall({action:'adminImport',form,headers,rows:rows.slice(i,i+300)});
+    if(!d.ok){showToast(d.error||'Nahrání se nepovedlo','error');break}
+    added+=d.added||0;skipped+=d.skipped||0;bad+=d.bad||0;
+  }
+  showToast(`Hotovo: ${added} nových${skipped?`, ${skipped} už tu bylo`:''}${bad?`, ${bad} řádků bez data přeskočeno`:''}.`);
+  hvRcLoad(form,true);
+};
+
 // ============== UŽIVATELÉ A ROLE + LOG ZMĚN ==============
 // Data: app_settings → 'hopi_admin_access' {roles:[…], users:[…]}, 'hopi_audit_log' [{at,by,cat,action,detail}]
 const HV_OWNER_ROLE={id:'owner',name:'Majitel',color:'#FF3B30',all:true,locked:true,desc:'Vidí a mění všechno včetně rolí.'};
 const HV_ROLE_PRESETS=[
   {id:'packer',name:'Balení objednávek',color:'#FF9500',sections:['orders','products'],home:'orders',desc:'Vidí objednávky a sklad, nic víc.'},
+  {id:'nabor',name:'Nábor',color:'#34C759',sections:['recruit'],home:'recruit',desc:'Vidí jen přihlášky řidičů a firem, nic z e-shopu.'},
 ];
 const HV_VIEW_ALIAS={ordersClassic:'orders',ordersOverview:'orders',processing:'orders',history:'orders'};
 const HV_ROLE_COLORS=['#FF3B30','#FF9500','#FFCC00','#34C759','#00C7BE','#007AFF','#5856D6','#AF52DE','#FF2D55','#8E8E93'];
@@ -13551,6 +14377,11 @@ async function hvSaveAccess(cfg,msg){
 function hvMyEmail(){const u=getAdminUser();return ((u&&u.email)||'').toLowerCase()}
 // Kdo jsem a co smím
 function hvAccess(){
+  const my=window._hvMyAccess;
+  if(my&&my.limited&&my.role){   // omezená role: seznam lidí a rolí nevidí, zná jen tu svoji
+    const role={id:my.role.id,name:my.role.name||'Nábor',color:my.role.color||'#34C759',sections:my.role.sections||[],home:my.role.home||''};
+    return {full:false,limited:true,role,user:{email:my.email,name:my.name,roleId:my.roleId},sections:new Set(role.sections)};
+  }
   const cfg=getAdminAccess(); const me=hvMyEmail();
   const owners=cfg.users.filter(u=>u.roleId==='owner'&&u.active!==false);
   if(!owners.length) return {full:true,role:HV_OWNER_ROLE,setup:true,user:null};   // nikdo nemá roli Majitel → vše (zpětná kompatibilita)
@@ -14089,6 +14920,8 @@ window.previewEmail=function(key){
   }else{
     demoOrder={...demoOrder,status:key};
   }
+  // náhled e-mailu „Doručeno“ s hodnocením (ukázkový odkaz, skutečný kód doplní server)
+  if(key==='delivered')demoOrder={...demoOrder,reviewToken:'ukazka'};
   const html=buildEmailHTML(demoOrder,tpl);
   const subject=fillTemplate(tpl.subject,demoOrder);
   showEmailPreview(subject,html);
@@ -14136,6 +14969,7 @@ window.setMode=async function(mode){
   viewAdmin();
 }
 
+window.hvSetReviewDelay=async function(v){const c=getEmailConfig();c.reviewDelayHours=Math.max(0,Math.min(168,Number(v)||0));await setEmailConfig(c);showToast(c.reviewDelayHours?'Žádost o hodnocení odejde '+(c.reviewDelayHours>=24?(c.reviewDelayHours===24?'další den':'za '+c.reviewDelayHours/24+' dny'):'za '+c.reviewDelayHours+' h')+' po doručení':'Žádost o hodnocení odejde hned')};
 window.saveEmailConfig=async function(){
   const c=getEmailConfig();
   c.fromName=document.getElementById('cfg_fromName').value.trim();
@@ -14195,7 +15029,7 @@ window.resendEmail=async function(orderId,status){
   if(!o){showToast('Objednávka nenalezena','error');return}
   showToast('Odesílám znovu...');
   const r=await sendStatusEmail(o,status,{force:true});
-  if(r.ok)showToast('✅ E-mail odeslán');
+  if(r.ok)showToast(status==='delivered'?'✅ E-mail odeslán hned (bez čekání)':'✅ E-mail odeslán');
   else showToast('❌ '+(r.reason||'chyba'),'error');
   viewAdmin();
 }
